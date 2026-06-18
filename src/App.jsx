@@ -451,7 +451,7 @@ function App() {
               {/* Google Maps Stylized Iframe pointing to the Bangalore address */}
               <iframe 
                 title="Venue Location Map"
-                src="https://maps.google.com/maps?q=No%3A%2041%2C%201st%20A%20Cross%2C%20Adarsha%20layout%2C%20Ganapatipura%2C%20Konanakunte%20cross%2C%20Bangalore%20560062&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                src="https://maps.google.com/maps?q=12.888201,77.567145&t=&z=15&ie=UTF8&iwloc=&output=embed"
                 allowFullScreen="" 
                 loading="lazy" 
                 referrerPolicy="no-referrer-when-downgrade"
@@ -468,7 +468,7 @@ function App() {
               </div>
               <div>
                 <a 
-                  href="https://www.google.com/maps/dir/?api=1&destination=No%2041%201st%20A%20Cross%20Adarsha%20layout%20Ganapatipura%20Konanakunte%20cross%20Bangalore%20560062" 
+                  href="https://www.google.com/maps/dir/?api=1&destination=12.888201,77.567145" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="btn-primary"
