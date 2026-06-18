@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import { Calendar, MapPin, Clock, Users, Heart, ChevronLeft, ChevronRight, Check, Send, Sparkles } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Calendar, MapPin, Clock, Users, Heart, ChevronLeft, ChevronRight, Check, Send, Sparkles, VolumeX } from 'lucide-react'
 import './App.css'
+import housewarmingMusic from './assets/housewarming.mp3'
 
 // Image slides details
 const SLIDES = [
@@ -22,6 +23,53 @@ const SLIDES = [
 ];
 
 function App() {
+  // Music state
+  const [isPlaying, setIsPlaying] = useState(false)
+  const audioRef = useRef(null)
+
+  // Auto-play attempt on user interaction
+  useEffect(() => {
+    const startAudioOnInteraction = () => {
+      if (audioRef.current && !isPlaying) {
+        audioRef.current.play()
+          .then(() => {
+            setIsPlaying(true)
+          })
+          .catch((err) => {
+            console.log("Autoplay blocked or failed:", err)
+          })
+      }
+      // Remove listeners after first interaction
+      document.removeEventListener('click', startAudioOnInteraction)
+      document.removeEventListener('touchstart', startAudioOnInteraction)
+    }
+
+    document.addEventListener('click', startAudioOnInteraction)
+    document.addEventListener('touchstart', startAudioOnInteraction)
+
+    return () => {
+      document.removeEventListener('click', startAudioOnInteraction)
+      document.removeEventListener('touchstart', startAudioOnInteraction)
+    }
+  }, [isPlaying])
+
+  const togglePlay = () => {
+    if (!audioRef.current) return
+    
+    if (isPlaying) {
+      audioRef.current.pause()
+      setIsPlaying(false)
+    } else {
+      audioRef.current.play()
+        .then(() => {
+          setIsPlaying(true)
+        })
+        .catch((err) => {
+          console.log("Failed to play audio:", err)
+        })
+    }
+  }
+
   // Countdown state
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
   
@@ -167,6 +215,37 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* Background Music */}
+      <audio 
+        ref={audioRef} 
+        src={housewarmingMusic} 
+        loop 
+        preload="auto"
+      />
+
+      {/* Floating Music Control Button */}
+      <div className="music-control-wrapper">
+        <button 
+          onClick={togglePlay} 
+          className={`music-btn glass-card ${isPlaying ? 'playing' : ''}`}
+          aria-label={isPlaying ? "Mute background music" : "Play background music"}
+        >
+          {isPlaying ? (
+            <div className="music-icon-active">
+              <span className="bar"></span>
+              <span className="bar"></span>
+              <span className="bar"></span>
+              <span className="bar"></span>
+            </div>
+          ) : (
+            <VolumeX size={20} />
+          )}
+        </button>
+        <span className="music-tooltip">
+          {isPlaying ? "Mute Music" : "Play Music"}
+        </span>
+      </div>
+
       {/* Decorative Orbs */}
       <div className="ambient-glow top-left"></div>
       <div className="ambient-glow middle"></div>
