@@ -424,7 +424,6 @@ function App() {
                 >
                   <img src={slide.url} alt={slide.title} />
                   <div className="gallery-slide-overlay">
-                    <h3 className="gallery-slide-title">{slide.title}</h3>
                     <p className="gallery-slide-desc">{slide.desc}</p>
                   </div>
                 </div>
@@ -515,15 +514,16 @@ function App() {
             </div>
 
             {/* RSVP Form Card */}
-            <div className="glass-card rsvp-form-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div className="glass-card rsvp-form-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <h2 className="rsvp-title" style={{ marginBottom: '10px', textAlign: 'center' }}>Kindly RSVP</h2>
+              
+              <div className="rsvp-attending-count-badge">
+                <Users size={16} />
+                <span>{totalAttendingGuests} guests attending</span>
+              </div>
+
               {!rsvpSubmitted ? (
-                <form onSubmit={handleRsvpSubmit} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                  <h2 className="rsvp-title" style={{ marginBottom: '10px', textAlign: 'center' }}>Kindly RSVP</h2>
-                  
-                  <div className="rsvp-attending-count-badge">
-                    <Users size={16} />
-                    <span>{totalAttendingGuests} guests attending</span>
-                  </div>
+                <form onSubmit={handleRsvpSubmit} style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                   
                   <div className="form-group">
                     <label className="form-label" htmlFor="rsvp-name">Your Full Name</label>
@@ -602,12 +602,12 @@ function App() {
                   </button>
                 </form>
               ) : (
-                <div className="rsvp-success-state" style={{ flexGrow: 1 }}>
-                  <div className="success-icon-wrapper">
+                <div className="rsvp-success-state" style={{ width: '100%' }}>
+                  <div className="success-icon-wrapper" style={{ margin: '0 auto 10px' }}>
                     <Heart size={36} fill="currentColor" />
                   </div>
-                  <h3 className="rsvp-title" style={{ marginBottom: '5px' }}>Thank You!</h3>
-                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '15px', lineHeight: '1.6', marginBottom: '20px' }}>
+                  <h3 className="rsvp-title" style={{ marginBottom: '5px', textAlign: 'center' }}>Thank You!</h3>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '15px', lineHeight: '1.6', marginBottom: '20px', textAlign: 'center' }}>
                     Your response has been saved. We are thrilled to celebrate this special day with you!
                   </p>
                   <button 
@@ -617,6 +617,7 @@ function App() {
                     }} 
                     className="btn-secondary"
                     id="btn-edit-rsvp"
+                    style={{ display: 'block', margin: '0 auto' }}
                   >
                     Change RSVP Response
                   </button>
@@ -625,7 +626,7 @@ function App() {
               
               {/* Joined Guest Names Preview */}
               {rsvpList.filter(r => r.attending === 'yes').length > 0 && (
-                <div className="rsvp-attending-names-preview">
+                <div className="rsvp-attending-names-preview" style={{ width: '100%' }}>
                   <strong>Joined by:</strong> {rsvpList.filter(r => r.attending === 'yes').map(r => r.name).join(', ')}
                 </div>
               )}
