@@ -1,75 +1,89 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Calendar, MapPin, Clock, Users, Heart, ChevronLeft, ChevronRight, Check, Send, Sparkles, VolumeX } from 'lucide-react'
+import { Calendar, MapPin, Clock, Users, Heart, ChevronLeft, ChevronRight, Check, Send, Sparkles, VolumeX, Play, Pause } from 'lucide-react'
 import './App.css'
+import img2 from './assets/interior/Mrs. Ramya - Design Presentation_page-0002.jpg'
+import img3 from './assets/interior/Mrs. Ramya - Design Presentation_page-0003.jpg'
+import img4 from './assets/interior/Mrs. Ramya - Design Presentation_page-0004.jpg'
+import img5 from './assets/interior/Mrs. Ramya - Design Presentation_page-0005.jpg'
+import img6 from './assets/interior/Mrs. Ramya - Design Presentation_page-0006.jpg'
+import img7 from './assets/interior/Mrs. Ramya - Design Presentation_page-0007.jpg'
+import img8 from './assets/interior/Mrs. Ramya - Design Presentation_page-0008.jpg'
+import img9 from './assets/interior/Mrs. Ramya - Design Presentation_page-0009.jpg'
+import img10 from './assets/interior/Mrs. Ramya - Design Presentation_page-0010.jpg'
+import img11 from './assets/interior/Mrs. Ramya - Design Presentation_page-0011.jpg'
+import img12 from './assets/interior/Mrs. Ramya - Design Presentation_page-0012.jpg'
+import img13 from './assets/interior/Mrs. Ramya - Design Presentation_page-0013.jpg'
+import img14 from './assets/interior/Mrs. Ramya - Design Presentation_page-0014.jpg'
 
 // Image slides details
 const SLIDES = [
   {
-    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0002.jpg',
+    url: img2,
     title: 'Modern Living Space',
     desc: 'An elegant layout with warm lighting, plush furnishings, and a cozy ambience.'
   },
   {
-    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0003.jpg',
+    url: img3,
     title: 'Foyer Entryway',
     desc: 'A welcoming entrance design with a sleek console table, mirror, and soft accents.'
   },
   {
-    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0004.jpg',
+    url: img4,
     title: 'Dining Area',
     desc: 'A cozy dining setup perfect for family dinners, gatherings, and celebrations.'
   },
   {
-    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0005.jpg',
+    url: img5,
     title: 'Gourmet Kitchen',
     desc: 'A modular kitchen with smart storage, modern built-in appliances, and high-end finishes.'
   },
   {
-    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0006.jpg',
+    url: img6,
     title: 'Master Bedroom Concept',
     desc: 'A luxurious and tranquil sanctuary designed specifically for deep rest and relaxation.'
   },
   {
-    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0007.jpg',
+    url: img7,
     title: 'Master Bedroom Wardrobes',
     desc: 'Sleek, handle-less built-in wardrobes with modular shelving and dresser units.'
   },
   {
-    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0008.jpg',
+    url: img8,
     title: 'Guest Bedroom Setup',
     desc: 'A warm and inviting space designed to make guests feel comfortable and at home.'
   },
   {
-    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0009.jpg',
+    url: img9,
     title: 'Kids / Study Bedroom',
     desc: 'A creative, vibrant space designed for work, study, and play.'
   },
   {
-    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0010.jpg',
+    url: img10,
     title: 'TV & Entertainment Console',
     desc: 'A minimalist entertainment hub with floating shelves and built-in ambient lighting.'
   },
   {
-    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0011.jpg',
+    url: img11,
     title: 'Foyer Accent Wall',
     desc: 'A striking feature wall that sets a premium, artistic tone for the entire home.'
   },
   {
-    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0012.jpg',
+    url: img12,
     title: 'Cozy Leisure Balcony',
     desc: 'A small outdoor escape featuring artificial turf, planters, and relaxing seating.'
   },
   {
-    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0013.jpg',
+    url: img13,
     title: 'Premium Bathroom Vanity',
     desc: 'A modern utility space featuring smart back-lit mirrors and high-quality quartz tops.'
   },
   {
-    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0014.jpg',
+    url: img14,
     title: 'Overall Interior Plan',
     desc: 'A detailed floor layout highlighting the conceptual flow of our beautiful new residence.'
   }
 ];
+
 
 function App() {
   // Music state
@@ -138,6 +152,15 @@ function App() {
     guests: '1',
     message: ''
   })
+  const [rsvpList, setRsvpList] = useState([])
+
+  const totalAttendingGuests = rsvpList.reduce((acc, curr) => {
+    if (curr.attending === 'yes') {
+      const val = parseInt(curr.guests, 10);
+      return acc + (isNaN(val) ? 1 : val);
+    }
+    return acc;
+  }, 0)
 
   // Guestbook state
   const [wishes, setWishes] = useState([])
@@ -154,6 +177,25 @@ function App() {
     const savedRsvp = localStorage.getItem('housewarming_rsvp')
     if (savedRsvp) {
       setRsvpSubmitted(true)
+      setRsvpForm(JSON.parse(savedRsvp))
+    }
+
+    // Load RSVP list
+    const savedRsvpList = localStorage.getItem('housewarming_rsvp_list')
+    if (savedRsvpList) {
+      setRsvpList(JSON.parse(savedRsvpList))
+    } else {
+      // Seed initial RSVPs for realistic look
+      const initialRsvps = [
+        { name: 'Siddharth & Ananya', attending: 'yes', guests: '2' },
+        { name: 'Rohan Sharma', attending: 'yes', guests: '1' },
+        { name: 'Meera Patel', attending: 'yes', guests: '3' },
+        { name: 'Vikram & Family', attending: 'yes', guests: '4' },
+        { name: 'Karan Johar', attending: 'yes', guests: '2' },
+        { name: 'Aditi Rao', attending: 'yes', guests: '1' }
+      ]
+      localStorage.setItem('housewarming_rsvp_list', JSON.stringify(initialRsvps))
+      setRsvpList(initialRsvps)
     }
 
     // Load guestbook wishes
@@ -220,6 +262,18 @@ function App() {
     localStorage.setItem('housewarming_rsvp', JSON.stringify(rsvpForm))
     setRsvpSubmitted(true)
 
+    // Save to global RSVP list
+    const savedRsvpList = localStorage.getItem('housewarming_rsvp_list')
+    let currentList = savedRsvpList ? JSON.parse(savedRsvpList) : []
+    const existingIndex = currentList.findIndex(item => item.name.toLowerCase() === rsvpForm.name.toLowerCase())
+    if (existingIndex > -1) {
+      currentList[existingIndex] = { ...rsvpForm }
+    } else {
+      currentList.push({ ...rsvpForm })
+    }
+    localStorage.setItem('housewarming_rsvp_list', JSON.stringify(currentList))
+    setRsvpList(currentList)
+
     // Automatically add to guestbook as well if there's a message
     if (rsvpForm.message.trim()) {
       const newWish = {
@@ -279,24 +333,25 @@ function App() {
 
       {/* Floating Music Control Button */}
       <div className="music-control-wrapper">
-        <button 
-          onClick={togglePlay} 
-          className={`music-btn glass-card ${isPlaying ? 'playing' : ''}`}
-          aria-label={isPlaying ? "Mute background music" : "Play background music"}
-        >
-          {isPlaying ? (
+        {isPlaying && (
+          <div className="music-visualizer-container">
             <div className="music-icon-active">
               <span className="bar"></span>
               <span className="bar"></span>
               <span className="bar"></span>
               <span className="bar"></span>
             </div>
-          ) : (
-            <VolumeX size={20} />
-          )}
+          </div>
+        )}
+        <button 
+          onClick={togglePlay} 
+          className={`music-btn glass-card ${isPlaying ? 'playing' : ''}`}
+          aria-label={isPlaying ? "Pause background music" : "Play background music"}
+        >
+          {isPlaying ? <Pause size={20} /> : <Play size={20} />}
         </button>
         <span className="music-tooltip">
-          {isPlaying ? "Mute Music" : "Play Music"}
+          {isPlaying ? "Pause Music" : "Play Music"}
         </span>
       </div>
 
@@ -460,10 +515,15 @@ function App() {
             </div>
 
             {/* RSVP Form Card */}
-            <div className="glass-card rsvp-form-container">
+            <div className="glass-card rsvp-form-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               {!rsvpSubmitted ? (
-                <form onSubmit={handleRsvpSubmit}>
-                  <h2 className="rsvp-title">Kindly RSVP</h2>
+                <form onSubmit={handleRsvpSubmit} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                  <h2 className="rsvp-title" style={{ marginBottom: '10px', textAlign: 'center' }}>Kindly RSVP</h2>
+                  
+                  <div className="rsvp-attending-count-badge">
+                    <Users size={16} />
+                    <span>{totalAttendingGuests} guests attending</span>
+                  </div>
                   
                   <div className="form-group">
                     <label className="form-label" htmlFor="rsvp-name">Your Full Name</label>
@@ -542,7 +602,7 @@ function App() {
                   </button>
                 </form>
               ) : (
-                <div className="rsvp-success-state">
+                <div className="rsvp-success-state" style={{ flexGrow: 1 }}>
                   <div className="success-icon-wrapper">
                     <Heart size={36} fill="currentColor" />
                   </div>
@@ -560,6 +620,13 @@ function App() {
                   >
                     Change RSVP Response
                   </button>
+                </div>
+              )}
+              
+              {/* Joined Guest Names Preview */}
+              {rsvpList.filter(r => r.attending === 'yes').length > 0 && (
+                <div className="rsvp-attending-names-preview">
+                  <strong>Joined by:</strong> {rsvpList.filter(r => r.attending === 'yes').map(r => r.name).join(', ')}
                 </div>
               )}
             </div>

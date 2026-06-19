@@ -829,6 +829,20 @@ footer {
   gap: 10px;
 }
 
+.music-visualizer-container {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  padding: 10px 14px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-premium);
+  height: 44px;
+}
+
 .music-btn {
   width: 50px;
   height: 50px;
@@ -952,5 +966,48 @@ footer {
   .music-tooltip {
     display: none; /* Hide tooltip on mobile to avoid layout crowding */
   }
+  .music-visualizer-container {
+    display: none; /* Hide visualizer on mobile for a cleaner look */
+  }
+}
+
+/* RSVP Attending Badge */
+.rsvp-attending-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  color: var(--color-gold);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  align-self: center;
+  box-shadow: 0 4px 10px rgba(212, 175, 55, 0.05);
+}
+
+.rsvp-attending-names-preview {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  text-align: center;
+  margin-top: 15px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 10px 14px;
+  border-radius: 12px;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.rsvp-attending-names-preview::-webkit-scrollbar {
+  width: 4px;
+}
+
+.rsvp-attending-names-preview::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.2);
+  border-radius: 4px;
 }
 
