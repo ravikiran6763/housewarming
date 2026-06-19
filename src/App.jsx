@@ -1,24 +1,73 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Calendar, MapPin, Clock, Users, Heart, ChevronLeft, ChevronRight, Check, Send, Sparkles, VolumeX } from 'lucide-react'
 import './App.css'
-import housewarmingMusic from './assets/housewarming.mp3'
 
 // Image slides details
 const SLIDES = [
   {
-    url: '/assets/living_room.png',
-    title: 'The Living Room',
-    desc: 'Designed for warmth, filled with cozy corners and soft light, ready for endless conversations with friends and family.'
+    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0002.jpg',
+    title: 'Modern Living Space',
+    desc: 'An elegant layout with warm lighting, plush furnishings, and a cozy ambience.'
   },
   {
-    url: '/assets/kitchen.png',
-    title: 'The Heart of the Home',
-    desc: 'A bright, sunny kitchen with wooden accents where we will cook, laugh, and share delicious meals together.'
+    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0003.jpg',
+    title: 'Foyer Entryway',
+    desc: 'A welcoming entrance design with a sleek console table, mirror, and soft accents.'
   },
   {
-    url: '/assets/balcony.png',
-    title: 'The Sunset Balcony',
-    desc: 'Our favorite spot, decorated with plants and fairy lights, offering a quiet escape and beautiful skyline views.'
+    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0004.jpg',
+    title: 'Dining Area',
+    desc: 'A cozy dining setup perfect for family dinners, gatherings, and celebrations.'
+  },
+  {
+    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0005.jpg',
+    title: 'Gourmet Kitchen',
+    desc: 'A modular kitchen with smart storage, modern built-in appliances, and high-end finishes.'
+  },
+  {
+    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0006.jpg',
+    title: 'Master Bedroom Concept',
+    desc: 'A luxurious and tranquil sanctuary designed specifically for deep rest and relaxation.'
+  },
+  {
+    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0007.jpg',
+    title: 'Master Bedroom Wardrobes',
+    desc: 'Sleek, handle-less built-in wardrobes with modular shelving and dresser units.'
+  },
+  {
+    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0008.jpg',
+    title: 'Guest Bedroom Setup',
+    desc: 'A warm and inviting space designed to make guests feel comfortable and at home.'
+  },
+  {
+    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0009.jpg',
+    title: 'Kids / Study Bedroom',
+    desc: 'A creative, vibrant space designed for work, study, and play.'
+  },
+  {
+    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0010.jpg',
+    title: 'TV & Entertainment Console',
+    desc: 'A minimalist entertainment hub with floating shelves and built-in ambient lighting.'
+  },
+  {
+    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0011.jpg',
+    title: 'Foyer Accent Wall',
+    desc: 'A striking feature wall that sets a premium, artistic tone for the entire home.'
+  },
+  {
+    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0012.jpg',
+    title: 'Cozy Leisure Balcony',
+    desc: 'A small outdoor escape featuring artificial turf, planters, and relaxing seating.'
+  },
+  {
+    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0013.jpg',
+    title: 'Premium Bathroom Vanity',
+    desc: 'A modern utility space featuring smart back-lit mirrors and high-quality quartz tops.'
+  },
+  {
+    url: '/assets/interior/Mrs. Ramya - Design Presentation_page-0014.jpg',
+    title: 'Overall Interior Plan',
+    desc: 'A detailed floor layout highlighting the conceptual flow of our beautiful new residence.'
   }
 ];
 
@@ -30,7 +79,11 @@ function App() {
   // Auto-play attempt on user interaction
   useEffect(() => {
     const startAudioOnInteraction = () => {
-      if (audioRef.current && !isPlaying) {
+      // Remove listeners immediately to prevent double-firing
+      document.removeEventListener('click', startAudioOnInteraction)
+      document.removeEventListener('touchstart', startAudioOnInteraction)
+
+      if (audioRef.current) {
         audioRef.current.play()
           .then(() => {
             setIsPlaying(true)
@@ -39,9 +92,6 @@ function App() {
             console.log("Autoplay blocked or failed:", err)
           })
       }
-      // Remove listeners after first interaction
-      document.removeEventListener('click', startAudioOnInteraction)
-      document.removeEventListener('touchstart', startAudioOnInteraction)
     }
 
     document.addEventListener('click', startAudioOnInteraction)
@@ -51,9 +101,13 @@ function App() {
       document.removeEventListener('click', startAudioOnInteraction)
       document.removeEventListener('touchstart', startAudioOnInteraction)
     }
-  }, [isPlaying])
+  }, [])
 
-  const togglePlay = () => {
+  const togglePlay = (e) => {
+    if (e) {
+      e.stopPropagation()
+    }
+    
     if (!audioRef.current) return
     
     if (isPlaying) {
@@ -92,8 +146,8 @@ function App() {
     wish: ''
   })
 
-  // Target Date: July 5, 2026, 4:00 PM
-  const TARGET_DATE = new Date('2026-07-05T16:00:00');
+  // Target Date: July 5, 2026, 10:00 AM
+  const TARGET_DATE = new Date('2026-07-05T10:00:00');
 
   useEffect(() => {
     // Check if user has already RSVP'd
@@ -206,10 +260,10 @@ function App() {
   // Google Calendar Link generator
   const getGoogleCalendarLink = () => {
     const title = encodeURIComponent("Ramya & Ravikiran's Housewarming Celebration");
-    const details = encodeURIComponent("Join us for our housewarming party and dinner to celebrate our new home!");
+    const details = encodeURIComponent("Join us for our housewarming party and lunch to celebrate our new home!");
     const location = encodeURIComponent("No: 41, 1st A Cross, Adarsha layout, Ganapatipura, Konanakunte cross, Bangalore 560062");
-    // Date formats: 20260705T160000 (Local time 4 PM to 9 PM)
-    const dates = "20260705T103000Z/20260705T153000Z"; // UTC time equivalent (4 PM IST is 10:30 AM UTC)
+    // Date formats: 20260705T100000 (Local time 10 AM to 3 PM)
+    const dates = "20260705T043000Z/20260705T093000Z"; // UTC time equivalent (10 AM IST is 4:30 AM UTC)
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}&dates=${dates}`;
   }
 
@@ -218,7 +272,7 @@ function App() {
       {/* Background Music */}
       <audio 
         ref={audioRef} 
-        src={housewarmingMusic} 
+        src="/assets/housewarming.mp3" 
         loop 
         preload="auto"
       />
@@ -375,8 +429,8 @@ function App() {
                 </div>
                 <div className="details-text-group">
                   <span className="details-label">Time</span>
-                  <span className="details-value-main">4:00 PM Onwards</span>
-                  <span className="details-value-sub">Pooja followed by High Tea & Dinner</span>
+                  <span className="details-value-main">10:00 AM Onwards</span>
+                  <span className="details-value-sub">Pooja followed by Lunch</span>
                 </div>
               </div>
 
