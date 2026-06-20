@@ -345,7 +345,7 @@ function App() {
         )}
         <button 
           onClick={togglePlay} 
-          className={`music-btn glass-card ${isPlaying ? 'playing' : ''}`}
+          className={`music-btn ${isPlaying ? 'playing' : ''}`}
           aria-label={isPlaying ? "Pause background music" : "Play background music"}
         >
           {isPlaying ? <Pause size={20} /> : <Play size={20} />}

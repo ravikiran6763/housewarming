@@ -852,23 +852,23 @@ footer {
   justify-content: center;
   cursor: pointer;
   background: var(--bg-card);
-  border: 1px solid var(--border-glass);
-  box-shadow: var(--shadow-premium), 0 0 15px rgba(212, 175, 55, 0.1);
-  color: var(--color-gold);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  box-shadow: var(--shadow-premium), 0 0 15px rgba(0, 229, 255, 0.1);
+  color: #00e5ff; /* Standout Electric Cyan color different from gold/rose theme */
   transition: var(--transition-smooth);
 }
 
 .music-btn:hover {
   transform: scale(1.1);
-  border-color: var(--color-gold);
-  color: var(--color-gold);
-  box-shadow: var(--shadow-premium), 0 0 20px rgba(212, 175, 55, 0.3);
+  border-color: #00e5ff;
+  color: #00e5ff;
+  box-shadow: var(--shadow-premium), 0 0 20px rgba(0, 229, 255, 0.45);
 }
 
 .music-btn.playing {
-  background: rgba(212, 175, 55, 0.15);
-  border-color: var(--color-gold);
-  animation: pulseGold 2s infinite;
+  background: rgba(0, 229, 255, 0.15);
+  border-color: #00e5ff;
+  animation: pulseCyan 2s infinite;
 }
 
 .music-tooltip {
@@ -907,7 +907,7 @@ footer {
 .music-icon-active .bar {
   width: 3px;
   height: 2px;
-  background-color: var(--color-gold);
+  background-color: #00e5ff; /* Standout Electric Cyan */
   border-radius: 1px;
   animation: soundwave 1s infinite alternate;
 }
@@ -941,15 +941,15 @@ footer {
   }
 }
 
-@keyframes pulseGold {
+@keyframes pulseCyan {
   0% {
-    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4);
+    box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.4);
   }
   70% {
-    box-shadow: 0 0 0 10px rgba(212, 175, 55, 0);
+    box-shadow: 0 0 0 10px rgba(0, 229, 255, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
+    box-shadow: 0 0 0 0 rgba(0, 229, 255, 0);
   }
 }
 
