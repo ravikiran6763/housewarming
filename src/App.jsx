@@ -84,11 +84,45 @@ const SLIDES = [
   }
 ];
 
+// Falling flower petals configuration
+const PETAL_COLORS = [
+  'linear-gradient(135deg, #ff9f00, #ff5e00)', // Marigold Orange
+  'linear-gradient(135deg, #ffe066, #f5c000)', // Marigold Yellow
+  'linear-gradient(135deg, #ff758c, #ff7eb3)', // Rose Pink
+  'linear-gradient(135deg, #ff4e50, #f9d423)', // Sunset Gold
+];
+
+const PETALS = Array.from({ length: 40 }).map((_, i) => ({
+  id: i,
+  left: `${Math.random() * 100}%`,
+  size: `${Math.random() * 12 + 8}px`, // Petal size (8px to 20px)
+  delay: `${Math.random() * 8}s`,
+  duration: `${Math.random() * 5 + 6}s`, // Falling speed
+  color: PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)],
+  drift: `${Math.random() * 100 - 50}px`, // Swaying amount
+  initialRotation: `${Math.random() * 360}deg`
+}));
+
+// URL-encoding helper for Netlify forms submission
+const encode = (data) => {
+  return Object.keys(data)
+    .map((key) => encodeURIComponent(key) + "=" + encodeURIComponent(data[key]))
+    .join("&");
+};
 
 function App() {
   // Music state
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef(null)
+
+  // Sound effect helper
+  const playSoundEffect = (src) => {
+    const sfx = new Audio(src);
+    sfx.volume = 0.5;
+    sfx.play().catch((err) => {
+      console.log("Sound effect playback blocked or failed:", err);
+    });
+  };
 
   // Auto-play attempt on user interaction
   useEffect(() => {
@@ -261,6 +295,7 @@ function App() {
 
     localStorage.setItem('housewarming_rsvp', JSON.stringify(rsvpForm))
     setRsvpSubmitted(true)
+    playSoundEffect('/assets/rsvp_success.mp3')
 
     // Save to global RSVP list
     const savedRsvpList = localStorage.getItem('housewarming_rsvp_list')
@@ -273,6 +308,31 @@ function App() {
     }
     localStorage.setItem('housewarming_rsvp_list', JSON.stringify(currentList))
     setRsvpList(currentList)
+
+    // Calculate new total attending guests from currentList
+    const newTotalGuests = currentList.reduce((acc, curr) => {
+      if (curr.attending === 'yes') {
+        const val = parseInt(curr.guests, 10);
+        return acc + (isNaN(val) ? 1 : val);
+      }
+      return acc;
+    }, 0);
+
+    // Submit to Netlify Forms
+    fetch("/", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: encode({
+        "form-name": "rsvp",
+        name: rsvpForm.name,
+        attending: rsvpForm.attending,
+        guests: rsvpForm.attending === 'yes' ? rsvpForm.guests : '0',
+        message: rsvpForm.message,
+        total_guests: newTotalGuests
+      })
+    })
+      .then(() => console.log("Netlify RSVP form submitted successfully"))
+      .catch(error => console.error("Netlify RSVP form submission error:", error));
 
     // Automatically add to guestbook as well if there's a message
     if (rsvpForm.message.trim()) {
@@ -297,6 +357,21 @@ function App() {
   const handleWishSubmit = (e) => {
     e.preventDefault()
     if (!guestbookForm.name.trim() || !guestbookForm.wish.trim()) return
+
+    playSoundEffect('/assets/wish_success.mp3')
+
+    // Submit to Netlify Forms
+    fetch("/", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: encode({
+        "form-name": "guestbook",
+        name: guestbookForm.name,
+        wish: guestbookForm.wish
+      })
+    })
+      .then(() => console.log("Netlify guestbook form submitted successfully"))
+      .catch(error => console.error("Netlify guestbook form submission error:", error));
 
     const newWish = {
       id: Date.now(),
@@ -365,6 +440,26 @@ function App() {
         {/* HERO SECTION */}
         <header className="hero-section" id="home">
           <div className="hero-border-frame glass-card">
+            {/* Falling Flower Petals Effect */}
+            <div className="flower-petals-container">
+              {PETALS.map((petal) => (
+                <span 
+                  key={petal.id} 
+                  className="flower-petal"
+                  style={{
+                    left: petal.left,
+                    width: petal.size,
+                    height: petal.size,
+                    background: petal.color,
+                    animationDelay: petal.delay,
+                    animationDuration: petal.duration,
+                    '--drift': petal.drift,
+                    transform: `rotate(${petal.initialRotation})`,
+                  }}
+                />
+              ))}
+            </div>
+
             <div className="hero-card">
               <span className="hero-header-ornament">New Beginnings</span>
               <h1 className="hero-main-title">WE ARE MOVING!</h1>

@@ -12,6 +12,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
   </head>
   <body>
+    <!-- Hidden HTML forms to let Netlify Forms detect them at build time -->
+    <form name="rsvp" netlify netlify-honeypot="bot-field" hidden>
+      <input type="text" name="name" />
+      <input type="text" name="attending" />
+      <input type="text" name="guests" />
+      <input type="text" name="message" />
+      <input type="text" name="total_guests" />
+    </form>
+    <form name="guestbook" netlify netlify-honeypot="bot-field" hidden>
+      <input type="text" name="name" />
+      <input type="text" name="wish" />
+    </form>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -204,6 +204,8 @@ html, body {
   align-items: center;
   gap: 25px;
   border-radius: 20px;
+  position: relative;
+  z-index: 2; /* Render text elements above the floating fire sparks */
 }
 
 .hero-header-ornament {
@@ -1009,5 +1011,44 @@ footer {
 .rsvp-attending-names-preview::-webkit-scrollbar-thumb {
   background: rgba(212, 175, 55, 0.2);
   border-radius: 4px;
+}
+
+/* Falling Flower Petals Effect */
+.flower-petals-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.flower-petal {
+  position: absolute;
+  top: -20px;
+  border-radius: 50% 0 50% 50%; /* organic petal shape */
+  opacity: 0;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transform-origin: center;
+  animation: petal-fall infinite linear;
+}
+
+@keyframes petal-fall {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  90% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(450px) translateX(var(--drift)) rotate(360deg);
+    opacity: 0;
+  }
 }
 
