@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Calendar, MapPin, Clock, Users, Heart, ChevronLeft, ChevronRight, Check, Send, Sparkles, VolumeX, Play, Pause } from 'lucide-react'
 import './App.css'
+import { supabase } from './supabaseClient'
 import img2 from './assets/interior/Mrs. Ramya - Design Presentation_page-0002.jpg'
 import img3 from './assets/interior/Mrs. Ramya - Design Presentation_page-0003.jpg'
 import img4 from './assets/interior/Mrs. Ramya - Design Presentation_page-0004.jpg'
@@ -207,6 +208,11 @@ function App() {
   const TARGET_DATE = new Date('2026-07-05T10:00:00');
 
   useEffect(() => {
+    console.log("Supabase client initialized:", !!supabase)
+    if (!supabase) {
+      console.warn("Supabase credentials missing. Operating in localStorage fallback mode. Please check your .env file or restart the Vite dev server.")
+    }
+
     // Check if user has already RSVP'd
     const savedRsvp = localStorage.getItem('housewarming_rsvp')
     if (savedRsvp) {
@@ -214,36 +220,70 @@ function App() {
       setRsvpForm(JSON.parse(savedRsvp))
     }
 
-    // Load RSVP list
-    const savedRsvpList = localStorage.getItem('housewarming_rsvp_list')
-    if (savedRsvpList) {
-      setRsvpList(JSON.parse(savedRsvpList))
-    } else {
-      // Seed initial RSVPs for realistic look
-      const initialRsvps = [
-        { name: 'Siddharth & Ananya', attending: 'yes', guests: '2' },
-        { name: 'Rohan Sharma', attending: 'yes', guests: '1' },
-        { name: 'Meera Patel', attending: 'yes', guests: '3' },
-        { name: 'Vikram & Family', attending: 'yes', guests: '4' },
-        { name: 'Karan Johar', attending: 'yes', guests: '2' },
-        { name: 'Aditi Rao', attending: 'yes', guests: '1' }
-      ]
-      localStorage.setItem('housewarming_rsvp_list', JSON.stringify(initialRsvps))
-      setRsvpList(initialRsvps)
+    // Load RSVP list and wishes from Supabase or localStorage fallback
+    const fetchRsvps = async () => {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('rsvps')
+          .select('*')
+          .order('created_at', { ascending: true })
+        if (error) {
+          console.error("Error fetching RSVPs:", error)
+        } else if (data) {
+          setRsvpList(data)
+        }
+      } else {
+        const savedRsvpList = localStorage.getItem('housewarming_rsvp_list')
+        if (savedRsvpList) {
+          setRsvpList(JSON.parse(savedRsvpList))
+        } else {
+          setRsvpList([])
+        }
+      }
     }
 
-    // Load guestbook wishes
-    const savedWishes = localStorage.getItem('housewarming_wishes')
-    if (savedWishes) {
-      setWishes(JSON.parse(savedWishes))
-    } else {
-      // Seed initial wishes for premium look
-      const initialWishes = [
-        { id: 1, name: 'Siddharth & Ananya', wish: 'May your new home be a place where love grows, memories are made, and laughter never ends! Can\'t wait to celebrate with you guys.', date: 'Jun 15, 2026' },
-        { id: 2, name: 'Rohan Sharma', wish: 'Heartiest congratulations, Ramya and Ravikiran! The new place looks absolutely gorgeous. Super happy for you both!', date: 'Jun 16, 2026' }
-      ]
-      localStorage.setItem('housewarming_wishes', JSON.stringify(initialWishes))
-      setWishes(initialWishes)
+    const fetchWishes = async () => {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('wishes')
+          .select('*')
+          .order('created_at', { ascending: false })
+        if (error) {
+          console.error("Error fetching wishes:", error)
+        } else if (data) {
+          setWishes(data)
+        }
+      } else {
+        const savedWishes = localStorage.getItem('housewarming_wishes')
+        if (savedWishes) {
+          setWishes(JSON.parse(savedWishes))
+        } else {
+          setWishes([])
+        }
+      }
+    }
+
+    fetchRsvps()
+    fetchWishes()
+
+    // Setup real-time listeners if Supabase is connected
+    let rsvpsChannel;
+    let wishesChannel;
+
+    if (supabase) {
+      rsvpsChannel = supabase
+        .channel('rsvps-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'rsvps' }, () => {
+          fetchRsvps()
+        })
+        .subscribe()
+
+      wishesChannel = supabase
+        .channel('wishes-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'wishes' }, () => {
+          fetchWishes()
+        })
+        .subscribe()
     }
 
     // Countdown interval
@@ -263,7 +303,11 @@ function App() {
       }
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      if (rsvpsChannel) supabase.removeChannel(rsvpsChannel);
+      if (wishesChannel) supabase.removeChannel(wishesChannel);
+    };
   }, []);
 
   // Slider Autoplay
@@ -289,7 +333,7 @@ function App() {
     setRsvpForm(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleRsvpSubmit = (e) => {
+  const handleRsvpSubmit = async (e) => {
     e.preventDefault()
     if (!rsvpForm.name.trim()) return
 
@@ -318,33 +362,64 @@ function App() {
       return acc;
     }, 0);
 
-    // Submit to Netlify Forms
-    fetch("/", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: encode({
-        "form-name": "rsvp",
-        name: rsvpForm.name,
-        attending: rsvpForm.attending,
-        guests: rsvpForm.attending === 'yes' ? rsvpForm.guests : '0',
-        message: rsvpForm.message,
-        total_guests: newTotalGuests
+    // Submit to Netlify Forms (only on hosted site)
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      fetch("/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: encode({
+          "form-name": "rsvp",
+          name: rsvpForm.name,
+          attending: rsvpForm.attending,
+          guests: rsvpForm.attending === 'yes' ? rsvpForm.guests : '0',
+          message: rsvpForm.message,
+          total_guests: newTotalGuests
+        })
       })
-    })
-      .then(() => console.log("Netlify RSVP form submitted successfully"))
-      .catch(error => console.error("Netlify RSVP form submission error:", error));
+        .then(() => console.log("Netlify RSVP form submitted successfully"))
+        .catch(error => console.error("Netlify RSVP form submission error:", error));
+    }
+
+    // Save to Supabase (if configured)
+    if (supabase) {
+      const { error } = await supabase
+        .from('rsvps')
+        .insert([{
+          name: rsvpForm.name,
+          attending: rsvpForm.attending,
+          guests: rsvpForm.attending === 'yes' ? parseInt(rsvpForm.guests, 10) : 0,
+          message: rsvpForm.message
+        }])
+      if (error) {
+        console.error("Error saving RSVP to Supabase:", error)
+      }
+    }
 
     // Automatically add to guestbook as well if there's a message
     if (rsvpForm.message.trim()) {
+      const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       const newWish = {
         id: Date.now(),
         name: rsvpForm.name,
         wish: rsvpForm.message,
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        date: dateStr
       }
       const updatedWishes = [newWish, ...wishes]
       setWishes(updatedWishes)
       localStorage.setItem('housewarming_wishes', JSON.stringify(updatedWishes))
+
+      if (supabase) {
+        const { error } = await supabase
+          .from('wishes')
+          .insert([{
+            name: rsvpForm.name,
+            wish: rsvpForm.message,
+            date: dateStr
+          }])
+        if (error) {
+          console.error("Error saving automatic wish to Supabase:", error)
+        }
+      }
     }
   }
 
@@ -354,35 +429,53 @@ function App() {
     setGuestbookForm(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleWishSubmit = (e) => {
+  const handleWishSubmit = async (e) => {
     e.preventDefault()
     if (!guestbookForm.name.trim() || !guestbookForm.wish.trim()) return
 
     playSoundEffect('/assets/wish_success.mp3')
 
-    // Submit to Netlify Forms
-    fetch("/", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: encode({
-        "form-name": "guestbook",
-        name: guestbookForm.name,
-        wish: guestbookForm.wish
+    // Submit to Netlify Forms (only on hosted site)
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      fetch("/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: encode({
+          "form-name": "guestbook",
+          name: guestbookForm.name,
+          wish: guestbookForm.wish
+        })
       })
-    })
-      .then(() => console.log("Netlify guestbook form submitted successfully"))
-      .catch(error => console.error("Netlify guestbook form submission error:", error));
+        .then(() => console.log("Netlify guestbook form submitted successfully"))
+        .catch(error => console.error("Netlify guestbook form submission error:", error));
+    }
+
+    const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
     const newWish = {
       id: Date.now(),
       name: guestbookForm.name,
       wish: guestbookForm.wish,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      date: dateStr
     }
 
     const updatedWishes = [newWish, ...wishes]
     setWishes(updatedWishes)
     localStorage.setItem('housewarming_wishes', JSON.stringify(updatedWishes))
+
+    if (supabase) {
+      const { error } = await supabase
+        .from('wishes')
+        .insert([{
+          name: guestbookForm.name,
+          wish: guestbookForm.wish,
+          date: dateStr
+        }])
+      if (error) {
+        console.error("Error saving wish to Supabase:", error)
+      }
+    }
+
     setGuestbookForm({ name: '', wish: '' })
   }
 
