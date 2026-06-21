@@ -1212,7 +1212,7 @@ function App() {
             <div className="hero-card">
               <span className="hero-header-ornament">New Beginnings</span>
               <h1 className="hero-main-title">WE ARE MOVING!</h1>
-              <p className="hero-names">Ramya & Ravikiran</p>
+              <p className="hero-names">Ramyashree & Ravikiran</p>
               
               <div className="section-divider">
                 <div className="line"></div>
@@ -1221,7 +1221,8 @@ function App() {
               </div>
 
               <p className="hero-tagline">
-                A new home is a blank canvas, and we cannot wait to fill it with the colors of laughter, friendship, and family. We warmly invite you to join us for our housewarming celebration as we step into this new chapter.
+                We built a house, now help us make it a home with your presence and blessings.
+                {/* A new home is a blank canvas, and we cannot wait to fill it with the colors of laughter, friendship, and family. We warmly invite you to join us for our housewarming celebration as we step into this new chapter. */}
               </p>
 
               {/* Countdown Timer */}
