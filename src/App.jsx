@@ -15,6 +15,7 @@ import img11 from './assets/interior/Mrs. Ramya - Design Presentation_page-0011.
 import img12 from './assets/interior/Mrs. Ramya - Design Presentation_page-0012.jpg'
 import img13 from './assets/interior/Mrs. Ramya - Design Presentation_page-0013.jpg'
 import img14 from './assets/interior/Mrs. Ramya - Design Presentation_page-0014.jpg'
+import invitationMusic from './assets/invitation.mp3'
 
 // Image slides details
 const SLIDES = [
@@ -115,6 +116,56 @@ function App() {
   // Music state
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef(null)
+
+  // Envelope states
+  const [isEnvelopeOpened, setIsEnvelopeOpened] = useState(false)
+  const [isIntroComplete, setIsIntroComplete] = useState(false)
+  const [envelopeStep, setEnvelopeStep] = useState(0)
+  const [miniSlideIndex, setMiniSlideIndex] = useState(0)
+  const [customAlert, setCustomAlert] = useState({ show: false, message: '' })
+
+  const showAlert = (message) => {
+    setCustomAlert({ show: true, message })
+  }
+
+  const handleSealEnvelope = () => {
+    setIsEnvelopeOpened(false)
+    playSoundEffect('/assets/wish_success.mp3')
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+      setIsPlaying(false)
+    }
+    setTimeout(() => {
+      setIsIntroComplete(true)
+    }, 1500)
+  }
+
+  // Control scroll lock on body depending on intro completion
+  useEffect(() => {
+    if (!isIntroComplete) {
+      document.body.classList.add('no-scroll')
+    } else {
+      document.body.classList.remove('no-scroll')
+    }
+    return () => {
+      document.body.classList.remove('no-scroll')
+    }
+  }, [isIntroComplete])
+
+  const handleOpenEnvelope = () => {
+    setIsEnvelopeOpened(true)
+    if (audioRef.current) {
+      audioRef.current.play()
+        .then(() => {
+          setIsPlaying(true)
+        })
+        .catch((err) => {
+          console.log("Audio autoplay from envelope click was blocked:", err)
+        })
+    }
+    playSoundEffect('/assets/wish_success.mp3')
+  }
 
   // Sound effect helper
   const playSoundEffect = (src) => {
@@ -363,14 +414,14 @@ function App() {
         if (error) {
           console.error("Error checking for duplicate phone number:", error)
         } else if (data) {
-          alert(`This phone number has already been used to RSVP (registered under "${data.name}").`);
+          showAlert(`We've already saved a spot for you! This phone number is registered under "${data.name}". We are so excited to celebrate our new home with you! 🏡✨`);
           return; // Halt submission
         }
       } else {
         // Fallback duplicate check locally
         const duplicateLocal = currentList.find(item => item.phone && item.phone.trim() === rsvpForm.phone.trim())
         if (duplicateLocal) {
-          alert(`This phone number has already been used to RSVP (registered under "${duplicateLocal.name}").`);
+          showAlert(`We've already saved a spot for you! This phone number is registered under "${duplicateLocal.name}". We are so excited to celebrate our new home with you! 🏡✨`);
           return; // Halt submission
         }
       }
@@ -459,6 +510,14 @@ function App() {
         }
       }
     }
+
+    if (!isIntroComplete) {
+      if (rsvpForm.attending === 'yes') {
+        setEnvelopeStep(4)
+      } else {
+        handleSealEnvelope()
+      }
+    }
   }
 
   // Guestbook Form Handler
@@ -532,10 +591,404 @@ function App() {
       {/* Background Music */}
       <audio 
         ref={audioRef} 
-        src="/assets/housewarming.mp3" 
+        src={invitationMusic} 
         loop 
         preload="auto"
       />
+
+      {/* Custom Alert Modal Overlay */}
+      {customAlert.show && (
+        <div className="custom-alert-overlay" onClick={() => setCustomAlert({ show: false, message: '' })}>
+          <div className="custom-alert-card glass-card" onClick={(e) => e.stopPropagation()}>
+            <div className="custom-alert-icon">
+              <Sparkles size={24} />
+            </div>
+            <p className="custom-alert-message">{customAlert.message}</p>
+            <button 
+              onClick={() => setCustomAlert({ show: false, message: '' })} 
+              className="btn-primary custom-alert-btn"
+            >
+              Okay
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Envelope Intro Overlay */}
+      <div className={`envelope-overlay ${isIntroComplete ? 'fade-out' : ''}`}>
+        {/* Falling Flower Petals inside overlay */}
+        <div className="flower-petals-container">
+          {PETALS.map((petal) => (
+            <span 
+              key={`intro-petal-${petal.id}`} 
+              className="flower-petal"
+              style={{
+                left: petal.left,
+                width: petal.size,
+                height: petal.size,
+                background: petal.color,
+                animationDelay: petal.delay,
+                animationDuration: petal.duration,
+                '--drift': petal.drift,
+                transform: `rotate(${petal.initialRotation})`,
+              }}
+            />
+          ))}
+        </div>
+
+        <div className={`envelope-container ${isEnvelopeOpened ? 'opened' : ''}`} onClick={!isEnvelopeOpened ? handleOpenEnvelope : undefined}>
+          <div className="envelope">
+            <div className="envelope-flap"></div>
+            <div className="envelope-pocket"></div>
+            
+            {/* The Letter Card inside */}
+            <div className="envelope-card">
+              <div className="envelope-card-content">
+                {/* Step 0: Welcome & Countdown */}
+                {envelopeStep === 0 && (
+                  <div className="envelope-card-step">
+                    <span className="envelope-card-subtitle">New Beginnings</span>
+                    <h2 className="envelope-card-title">WE ARE MOVING!</h2>
+                    <p className="envelope-card-names">Ramya & Ravikiran</p>
+                    <p className="envelope-card-msg">
+                      A new home is a blank canvas. We warmly invite you to join us for our housewarming celebration as we step into this new chapter.
+                    </p>
+                    
+                    {/* Countdown Timer */}
+                    <div className="countdown-container" style={{ transform: 'scale(0.85)', margin: '5px 0 15px' }}>
+                      <div className="countdown-item">
+                        <span className="countdown-val">{timeLeft.days}</span>
+                        <span className="countdown-lbl">Days</span>
+                      </div>
+                      <div className="countdown-item">
+                        <span className="countdown-val">{timeLeft.hours}</span>
+                        <span className="countdown-lbl">Hours</span>
+                      </div>
+                      <div className="countdown-item">
+                        <span className="countdown-val">{timeLeft.minutes}</span>
+                        <span className="countdown-lbl">Mins</span>
+                      </div>
+                      <div className="countdown-item">
+                        <span className="countdown-val">{timeLeft.seconds}</span>
+                        <span className="countdown-lbl">Secs</span>
+                      </div>
+                    </div>
+
+                    <div className="stepper-nav">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEnvelopeStep(1);
+                        }} 
+                        className="btn-stepper-next"
+                        style={{ width: '100%' }}
+                      >
+                        See Our New Home
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 1: Gallery Slider */}
+                {envelopeStep === 1 && (
+                  <div className="envelope-card-step">
+                    <span className="envelope-card-subtitle">A Glimpse Inside</span>
+                    <h2 className="envelope-card-title" style={{ fontSize: '22px' }}>Our New Home</h2>
+                    
+                    <div className="mini-slider">
+                      <div className="mini-slider-img-wrapper">
+                        <img src={SLIDES[miniSlideIndex].url} alt={SLIDES[miniSlideIndex].title} className="mini-slider-img" />
+                      </div>
+                      <div className="mini-slider-controls">
+                        <button 
+                          type="button"
+                          className="mini-slider-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMiniSlideIndex(prev => prev === 0 ? SLIDES.length - 1 : prev - 1);
+                          }}
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <span className="mini-slider-title">{miniSlideIndex + 1} / {SLIDES.length}</span>
+                        <button 
+                          type="button"
+                          className="mini-slider-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMiniSlideIndex(prev => prev === SLIDES.length - 1 ? 0 : prev + 1);
+                          }}
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="stepper-nav">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEnvelopeStep(0);
+                        }} 
+                        className="btn-stepper-back"
+                      >
+                        Back
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEnvelopeStep(2);
+                        }} 
+                        className="btn-stepper-next"
+                      >
+                        Celebration Details
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 2: Celebration Details & Map */}
+                {envelopeStep === 2 && (
+                  <div className="envelope-card-step">
+                    <span className="envelope-card-subtitle">Where & When</span>
+                    <h2 className="envelope-card-title" style={{ fontSize: '22px' }}>Celebration Details</h2>
+                    
+                    <div className="mini-details-group">
+                      <div className="mini-details-item">
+                        <div className="mini-details-icon"><Calendar size={18} /></div>
+                        <div className="mini-details-text">
+                          <span className="mini-details-val">Sunday, July 5, 2026</span>
+                          <span className="mini-details-lbl">Date</span>
+                        </div>
+                      </div>
+                      <div className="mini-details-item">
+                        <div className="mini-details-icon"><Clock size={18} /></div>
+                        <div className="mini-details-text">
+                          <span className="mini-details-val">10:00 AM Onwards</span>
+                          <span className="mini-details-lbl">Time (Pooja followed by Lunch)</span>
+                        </div>
+                      </div>
+                      <div className="mini-details-item">
+                        <div className="mini-details-icon"><MapPin size={18} /></div>
+                        <div className="mini-details-text">
+                          <span className="mini-details-val" style={{ fontSize: '11px', lineHeight: '1.3' }}>
+                            No: 41, 1st A Cross, Adarsha layout, Konanakunte cross, Bangalore
+                          </span>
+                          <span className="mini-details-lbl">Venue</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="stepper-nav">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEnvelopeStep(1);
+                        }} 
+                        className="btn-stepper-back"
+                      >
+                        Back
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEnvelopeStep(3);
+                        }} 
+                        className="btn-stepper-next"
+                      >
+                        RSVP & Blessings
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3: RSVP & Blessings Form */}
+                {envelopeStep === 3 && (
+                  <div className="envelope-card-step">
+                    <span className="envelope-card-subtitle">Response</span>
+                    <h2 className="envelope-card-title" style={{ fontSize: '20px', marginBottom: '8px' }}>Kindly RSVP</h2>
+                    
+                    <form 
+                      onSubmit={handleRsvpSubmit} 
+                      onClick={(e) => e.stopPropagation()} 
+                      style={{ display: 'flex', flexDirection: 'column', width: '100%', alignItems: 'center' }}
+                    >
+                      <div className="form-group">
+                        <label className="form-label" htmlFor="wz-rsvp-name">Your Full Name</label>
+                        <input 
+                          type="text" 
+                          id="wz-rsvp-name" 
+                          name="name" 
+                          value={rsvpForm.name} 
+                          onChange={handleRsvpChange} 
+                          className="form-input" 
+                          placeholder="Enter your name" 
+                          required 
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label" htmlFor="wz-rsvp-phone">
+                          Phone Number {rsvpForm.attending === 'no' && <span style={{ opacity: 0.6, fontSize: '11px' }}>(Optional)</span>}
+                        </label>
+                        <input 
+                          type="tel" 
+                          id="wz-rsvp-phone" 
+                          name="phone" 
+                          value={rsvpForm.phone} 
+                          onChange={handleRsvpChange} 
+                          className="form-input" 
+                          placeholder={rsvpForm.attending === 'yes' ? "Enter phone number" : "Enter phone (optional)"} 
+                          required={rsvpForm.attending === 'yes'} 
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <div className="radio-group">
+                          <label className={`radio-label ${rsvpForm.attending === 'yes' ? 'selected' : ''}`}>
+                            <input 
+                              type="radio" 
+                              name="attending" 
+                              value="yes" 
+                              checked={rsvpForm.attending === 'yes'} 
+                              onChange={handleRsvpChange} 
+                            />
+                            <Check size={14} /> Attending
+                          </label>
+                          <label className={`radio-label ${rsvpForm.attending === 'no' ? 'selected' : ''}`}>
+                            <input 
+                              type="radio" 
+                              name="attending" 
+                              value="no" 
+                              checked={rsvpForm.attending === 'no'} 
+                              onChange={handleRsvpChange} 
+                            />
+                            Regretfully No
+                          </label>
+                        </div>
+                      </div>
+
+                      {rsvpForm.attending === 'yes' && (
+                        <div className="form-group">
+                          <label className="form-label" htmlFor="wz-rsvp-guests">Guests</label>
+                          <select 
+                            id="wz-rsvp-guests" 
+                            name="guests" 
+                            value={rsvpForm.guests} 
+                            onChange={handleRsvpChange} 
+                            className="form-input"
+                          >
+                            <option value="1">1 Person</option>
+                            <option value="2">2 People</option>
+                            <option value="3">3 People</option>
+                            <option value="4">4 People</option>
+                            <option value="5">5+ People</option>
+                          </select>
+                        </div>
+                      )}
+
+                      <div className="form-group">
+                        <label className="form-label" htmlFor="wz-rsvp-message">Warm Wishes</label>
+                        <textarea 
+                          id="wz-rsvp-message" 
+                          name="message" 
+                          value={rsvpForm.message} 
+                          onChange={handleRsvpChange} 
+                          className="form-input" 
+                          placeholder="Blessings for our new home" 
+                          rows="2"
+                          required
+                          onInvalid={(e) => e.target.setCustomValidity("Please share your warm wishes or blessings! It would mean the world to us as we step into our new home. ❤️")}
+                          onInput={(e) => e.target.setCustomValidity("")}
+                        ></textarea>
+                      </div>
+
+                      <div className="stepper-nav" style={{ width: '100%', maxWidth: 'none' }}>
+                        <button 
+                          type="button" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEnvelopeStep(2);
+                          }} 
+                          className="btn-stepper-back"
+                        >
+                          Back
+                        </button>
+                        <button type="submit" className="btn-stepper-next">
+                          Submit Response
+                        </button>
+                      </div>
+                    </form>
+                    
+                    <span 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSealEnvelope();
+                      }}
+                      style={{ fontSize: '11px', marginTop: '10px', textDecoration: 'underline', color: 'var(--color-text-muted)', cursor: 'pointer' }}
+                    >
+                      Skip RSVP & Enter Site
+                    </span>
+                  </div>
+                )}
+
+                {/* Step 4: Add to Calendar */}
+                {envelopeStep === 4 && (
+                  <div className="envelope-card-step">
+                    <span className="envelope-card-subtitle">Calendar Reminder</span>
+                    <h2 className="envelope-card-title">Save the Date!</h2>
+                    <div className="details-icon-wrapper" style={{ margin: '10px auto 15px', background: 'rgba(181, 148, 80, 0.1)', color: 'var(--color-gold)' }}>
+                      <Sparkles size={24} />
+                    </div>
+                    <p className="envelope-card-msg">
+                      We are absolutely thrilled that you will join us! Please save this celebration to your Google Calendar.
+                    </p>
+
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', marginBottom: '15px' }}>
+                      <a 
+                        href={getGoogleCalendarLink()} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="btn-primary"
+                        id="wz-btn-add-calendar"
+                        style={{ width: '100%', maxWidth: '280px', textDecoration: 'none', padding: '10px 18px', fontSize: '14px' }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Sparkles size={16} />
+                        Add to Calendar
+                      </a>
+                    </div>
+
+                    <div className="stepper-nav">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSealEnvelope();
+                        }} 
+                        className="btn-stepper-next"
+                        style={{ width: '100%', maxWidth: 'none' }}
+                      >
+                        Seal Response & Enter Site
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="wax-seal">
+              <span className="wax-seal-inner">R&R</span>
+            </div>
+          </div>
+        </div>
+
+        {!isEnvelopeOpened && (
+          <p className="envelope-prompt">
+            You have received an invitation<br />
+            <span style={{ fontSize: '12px', opacity: 0.7, letterSpacing: '1px' }}>Click wax seal to open</span>
+          </p>
+        )}
+      </div>
 
       {/* Floating Music Control Button */}
       <div className="music-control-wrapper">
@@ -568,8 +1021,31 @@ function App() {
 
       <div className="content-wrapper">
         
-        {/* HERO SECTION */}
-        <header className="hero-section" id="home">
+        {isIntroComplete && (
+          <header className="revealed-header glass-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', textAlign: 'center', animation: 'stepFadeIn 0.8s ease' }}>
+            <span className="section-subtitle">We are moving!</span>
+            <h1 className="hero-main-title" style={{ fontSize: '42px', margin: '5px 0' }}>Ramya & Ravikiran</h1>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '16px', maxWidth: '600px', lineHeight: '1.6' }}>
+              We are excited to step into our new home. Thank you for celebrating this milestone with us!
+            </p>
+            
+            <div className="rsvp-attending-count-badge" style={{ margin: '5px 0 0' }}>
+              <Users size={16} />
+              <span>{totalAttendingGuests} guests attending</span>
+            </div>
+
+            {rsvpList.filter(r => r.attending === 'yes').length > 0 && (
+              <div className="rsvp-attending-names-preview" style={{ width: '100%', maxWidth: '500px', margin: '5px 0 0' }}>
+                <strong>Joined by:</strong> {rsvpList.filter(r => r.attending === 'yes').map(r => r.name).join(', ')}
+              </div>
+            )}
+          </header>
+        )}
+
+        {!isIntroComplete && (
+          <>
+            {/* HERO SECTION */}
+            <header className="hero-section" id="home">
           <div className="hero-border-frame glass-card">
             {/* Falling Flower Petals Effect */}
             <div className="flower-petals-container">
@@ -836,6 +1312,9 @@ function App() {
                       className="form-input" 
                       placeholder="Leave a message for our new home" 
                       rows="3"
+                      required
+                      onInvalid={(e) => e.target.setCustomValidity("Please share your warm wishes or blessings! It would mean the world to us as we step into our new home. ❤️")}
+                      onInput={(e) => e.target.setCustomValidity("")}
                     ></textarea>
                   </div>
 
@@ -880,6 +1359,8 @@ function App() {
 
           </div>
         </section>
+          </>
+        )}
 
         {/* VENUE MAP SECTION */}
         <section id="map">
