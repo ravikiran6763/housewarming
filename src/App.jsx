@@ -989,7 +989,7 @@ function App() {
             {/* Envelope Cover Content - Top (Kalash & Subtitle) */}
             <div className="envelope-cover-top">
               {/* Gold Kalash SVG Outline */}
-              <svg className="kalash-svg" width="48" height="48" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-gold)', display: 'block' }}>
+              <svg className="kalash-svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 {/* Coconut */}
                 <path d="M 44 48 C 41 38, 44 26, 50 18 C 56 26, 59 38, 56 48 Z" fill="rgba(181, 148, 80, 0.15)" />
                 <path d="M 50 18 V 48" strokeWidth="1.5" strokeDasharray="2 3" />
@@ -1024,7 +1024,7 @@ function App() {
             {/* Envelope Cover Content - Bottom (House Name) */}
             <div className="envelope-cover-bottom">
               {/* Gaja Lakshmi Icon flanking Lakshmi with elephants */}
-              <svg className="gaja-lakshmi-svg" width="120" height="42" viewBox="0 0 140 50" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--color-gold)', margin: '12px auto 8px', display: 'block' }}>
+              <svg className="gaja-lakshmi-svg" viewBox="0 0 140 50" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 {/* Center Lakshmi on Lotus */}
                 <path d="M 60 43 C 63 46, 77 46, 80 43" strokeWidth="1.5" />
                 <path d="M 56 40 C 52 38, 62 33, 67 36" strokeWidth="1.5" />
@@ -1123,7 +1123,7 @@ function App() {
         {isIntroComplete && (
           <header className="revealed-header glass-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', textAlign: 'center', animation: 'stepFadeIn 0.8s ease' }}>
             <span className="section-subtitle">Welcome to our new home!</span>
-            <h1 className="house-name-title" style={{ fontSize: '42px', margin: '5px 0' }}>Laxmi Kote</h1>
+            <h1 className="house-name-title">Laxmi Kote</h1>
             <p className="envelope-card-names" style={{ margin: '0 0 10px' }}>Ramya & Ravikiran</p>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '16px', maxWidth: '600px', lineHeight: '1.6' }}>
               We are excited to step into our new home, <span style={{ color: 'var(--color-gold)', fontWeight: 'bold' }}>Laxmi Kote</span>! Thank you for celebrating this milestone with us!
