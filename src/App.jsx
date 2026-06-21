@@ -123,6 +123,7 @@ function App() {
   const [envelopeStep, setEnvelopeStep] = useState(0)
   const [miniSlideIndex, setMiniSlideIndex] = useState(0)
   const [customAlert, setCustomAlert] = useState({ show: false, message: '' })
+  const [lightboxImageIndex, setLightboxImageIndex] = useState(null)
 
   const showAlert = (message) => {
     setCustomAlert({ show: true, message })
@@ -141,20 +142,61 @@ function App() {
     }, 1500)
   }
 
-  // Control scroll lock on body depending on intro completion
+  // Control scroll lock on body depending on intro completion or lightbox state
   useEffect(() => {
     if (!isIntroComplete) {
       document.body.classList.add('no-scroll')
       document.documentElement.classList.add('no-scroll')
+      document.body.classList.add('intro-active')
+    } else if (lightboxImageIndex !== null) {
+      document.body.classList.add('no-scroll')
+      document.documentElement.classList.add('no-scroll')
+      document.body.classList.remove('intro-active')
     } else {
       document.body.classList.remove('no-scroll')
       document.documentElement.classList.remove('no-scroll')
+      document.body.classList.remove('intro-active')
     }
     return () => {
       document.body.classList.remove('no-scroll')
       document.documentElement.classList.remove('no-scroll')
+      document.body.classList.remove('intro-active')
     }
-  }, [isIntroComplete])
+  }, [isIntroComplete, lightboxImageIndex])
+
+  // Handle keyboard navigation for lightbox
+  useEffect(() => {
+    if (lightboxImageIndex === null) return
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setLightboxImageIndex(null)
+      } else if (e.key === 'ArrowRight') {
+        setLightboxImageIndex((prev) => (prev === SLIDES.length - 1 ? 0 : prev + 1))
+      } else if (e.key === 'ArrowLeft') {
+        setLightboxImageIndex((prev) => (prev === 0 ? SLIDES.length - 1 : prev - 1))
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [lightboxImageIndex])
+
+  const closeLightbox = () => {
+    setLightboxImageIndex(null)
+  }
+
+  const prevLightboxImage = (e) => {
+    if (e) e.stopPropagation()
+    setLightboxImageIndex((prev) => (prev === 0 ? SLIDES.length - 1 : prev - 1))
+  }
+
+  const nextLightboxImage = (e) => {
+    if (e) e.stopPropagation()
+    setLightboxImageIndex((prev) => (prev === SLIDES.length - 1 ? 0 : prev + 1))
+  }
 
   const handleOpenEnvelope = () => {
     setIsEnvelopeOpened(true)
@@ -706,7 +748,7 @@ function App() {
                     <h2 className="envelope-card-title" style={{ fontSize: '22px' }}>Our New Home</h2>
                     
                     <div className="mini-slider">
-                      <div className="mini-slider-img-wrapper">
+                      <div className="mini-slider-img-wrapper" onClick={() => setLightboxImageIndex(miniSlideIndex)}>
                         <img src={SLIDES[miniSlideIndex].url} alt={SLIDES[miniSlideIndex].title} className="mini-slider-img" />
                       </div>
                       <div className="mini-slider-controls">
@@ -1223,6 +1265,7 @@ function App() {
                 <div 
                   key={index} 
                   className={`gallery-slide ${index === currentSlide ? 'active' : ''}`}
+                  onClick={() => setLightboxImageIndex(index)}
                 >
                   <img src={slide.url} alt={slide.title} />
                   <div className="gallery-slide-overlay">
@@ -1588,6 +1631,57 @@ function App() {
         </footer>
 
       </div>
+
+      {/* Lightbox Modal */}
+      {lightboxImageIndex !== null && (
+        <div 
+          className="lightbox-overlay" 
+          onClick={closeLightbox}
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* Close button */}
+          <button 
+            className="lightbox-close" 
+            onClick={closeLightbox}
+            aria-label="Close full screen view"
+          >
+            &times;
+          </button>
+
+          {/* Prev button */}
+          <button 
+            className="lightbox-arrow prev" 
+            onClick={prevLightboxImage}
+            aria-label="Previous image"
+          >
+            <ChevronLeft size={36} />
+          </button>
+
+          {/* Image Container */}
+          <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <img 
+              src={SLIDES[lightboxImageIndex].url} 
+              alt={SLIDES[lightboxImageIndex].title} 
+              className="lightbox-image"
+            />
+          </div>
+
+          {/* Next button */}
+          <button 
+            className="lightbox-arrow next" 
+            onClick={nextLightboxImage}
+            aria-label="Next image"
+          >
+            <ChevronRight size={36} />
+          </button>
+          
+          {/* Mini Counter */}
+          <div className="lightbox-counter">
+            {lightboxImageIndex + 1} / {SLIDES.length}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
