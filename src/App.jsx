@@ -183,6 +183,7 @@ function App() {
   const [rsvpSubmitted, setRsvpSubmitted] = useState(false)
   const [rsvpForm, setRsvpForm] = useState({
     name: '',
+    phone: '',
     attending: 'yes',
     guests: '1',
     message: ''
@@ -211,6 +212,14 @@ function App() {
     console.log("Supabase client initialized:", !!supabase)
     if (!supabase) {
       console.warn("Supabase credentials missing. Operating in localStorage fallback mode. Please check your .env file or restart the Vite dev server.")
+    }
+
+    // Migration: clear old seeded data from localStorage if present
+    const savedRsvpListCheck = localStorage.getItem('housewarming_rsvp_list')
+    if (savedRsvpListCheck && savedRsvpListCheck.includes('Siddharth & Ananya')) {
+      localStorage.removeItem('housewarming_rsvp_list')
+      localStorage.removeItem('housewarming_wishes')
+      localStorage.removeItem('housewarming_rsvp')
     }
 
     // Check if user has already RSVP'd
@@ -336,14 +345,41 @@ function App() {
   const handleRsvpSubmit = async (e) => {
     e.preventDefault()
     if (!rsvpForm.name.trim()) return
+    if (rsvpForm.attending === 'yes' && !rsvpForm.phone.trim()) return
+
+    // Save to global RSVP list
+    const savedRsvpList = localStorage.getItem('housewarming_rsvp_list')
+    let currentList = savedRsvpList ? JSON.parse(savedRsvpList) : []
+
+    // 1. Check duplicate phone in Supabase (if phone number is provided)
+    if (rsvpForm.phone.trim()) {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('rsvps')
+          .select('name')
+          .eq('phone', rsvpForm.phone.trim())
+          .maybeSingle()
+
+        if (error) {
+          console.error("Error checking for duplicate phone number:", error)
+        } else if (data) {
+          alert(`This phone number has already been used to RSVP (registered under "${data.name}").`);
+          return; // Halt submission
+        }
+      } else {
+        // Fallback duplicate check locally
+        const duplicateLocal = currentList.find(item => item.phone && item.phone.trim() === rsvpForm.phone.trim())
+        if (duplicateLocal) {
+          alert(`This phone number has already been used to RSVP (registered under "${duplicateLocal.name}").`);
+          return; // Halt submission
+        }
+      }
+    }
 
     localStorage.setItem('housewarming_rsvp', JSON.stringify(rsvpForm))
     setRsvpSubmitted(true)
     playSoundEffect('/assets/rsvp_success.mp3')
 
-    // Save to global RSVP list
-    const savedRsvpList = localStorage.getItem('housewarming_rsvp_list')
-    let currentList = savedRsvpList ? JSON.parse(savedRsvpList) : []
     const existingIndex = currentList.findIndex(item => item.name.toLowerCase() === rsvpForm.name.toLowerCase())
     if (existingIndex > -1) {
       currentList[existingIndex] = { ...rsvpForm }
@@ -370,6 +406,7 @@ function App() {
         body: encode({
           "form-name": "rsvp",
           name: rsvpForm.name,
+          phone: rsvpForm.phone,
           attending: rsvpForm.attending,
           guests: rsvpForm.attending === 'yes' ? rsvpForm.guests : '0',
           message: rsvpForm.message,
@@ -386,6 +423,7 @@ function App() {
         .from('rsvps')
         .insert([{
           name: rsvpForm.name,
+          phone: rsvpForm.phone.trim(),
           attending: rsvpForm.attending,
           guests: rsvpForm.attending === 'yes' ? parseInt(rsvpForm.guests, 10) : 0,
           message: rsvpForm.message
@@ -728,6 +766,22 @@ function App() {
                   </div>
 
                   <div className="form-group">
+                    <label className="form-label" htmlFor="rsvp-phone">
+                      Phone Number {rsvpForm.attending === 'no' && <span style={{ opacity: 0.6, fontSize: '13px' }}>(Optional)</span>}
+                    </label>
+                    <input 
+                      type="tel" 
+                      id="rsvp-phone" 
+                      name="phone" 
+                      value={rsvpForm.phone} 
+                      onChange={handleRsvpChange} 
+                      className="form-input" 
+                      placeholder={rsvpForm.attending === 'yes' ? "Enter your phone number" : "Enter your phone number (optional)"} 
+                      required={rsvpForm.attending === 'yes'} 
+                    />
+                  </div>
+
+                  <div className="form-group">
                     <label className="form-label">Will you attend?</label>
                     <div className="radio-group">
                       <label className={`radio-label ${rsvpForm.attending === 'yes' ? 'selected' : ''}`}>
@@ -796,8 +850,12 @@ function App() {
                   </div>
                   <h3 className="rsvp-title" style={{ marginBottom: '5px', textAlign: 'center' }}>Thank You!</h3>
                   <p style={{ color: 'var(--color-text-secondary)', fontSize: '15px', lineHeight: '1.6', marginBottom: '20px', textAlign: 'center' }}>
-                    Your response has been saved. We are thrilled to celebrate this special day with you!
+                    {rsvpForm.attending === 'yes' 
+                      ? "Your response has been saved. We are thrilled to celebrate this special day with you!"
+                      : "Your response has been saved. We will miss you! We would love it if you could leave a message of blessing in our Guestbook."
+                    }
                   </p>
+
                   <button 
                     onClick={() => {
                       localStorage.removeItem('housewarming_rsvp')
@@ -805,7 +863,7 @@ function App() {
                     }} 
                     className="btn-secondary"
                     id="btn-edit-rsvp"
-                    style={{ display: 'block', margin: '0 auto' }}
+                    style={{ display: 'block', margin: '0 auto', width: '100%' }}
                   >
                     Change RSVP Response
                   </button>
