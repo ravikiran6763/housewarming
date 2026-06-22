@@ -17,6 +17,16 @@ import img13 from './assets/interior/Mrs. Ramya - Design Presentation_page-0013.
 import img14 from './assets/interior/Mrs. Ramya - Design Presentation_page-0014.jpg'
 import invitationMusic from './assets/invitation.mp3'
 
+// Safe date parsing for cross-browser support (specifically Safari/iOS)
+const safeParseDate = (dateStr) => {
+  if (!dateStr) return new Date();
+  if (typeof dateStr === 'string') {
+    const formatted = dateStr.trim().replace(' ', 'T');
+    return new Date(formatted);
+  }
+  return new Date(dateStr);
+};
+
 // Image slides details
 const SLIDES = [
   {
@@ -310,13 +320,32 @@ function App() {
   const [currentSlide, setCurrentSlide] = useState(0)
 
   // RSVP state
-  const [rsvpSubmitted, setRsvpSubmitted] = useState(false)
-  const [rsvpForm, setRsvpForm] = useState({
-    name: '',
-    phone: '',
-    attending: 'yes',
-    guests: '1',
-    message: ''
+  const [rsvpSubmitted, setRsvpSubmitted] = useState(() => {
+    const savedRsvpListCheck = localStorage.getItem('housewarming_rsvp_list')
+    if (savedRsvpListCheck && savedRsvpListCheck.includes('Siddharth & Ananya')) {
+      localStorage.removeItem('housewarming_rsvp_list')
+      localStorage.removeItem('housewarming_wishes')
+      localStorage.removeItem('housewarming_rsvp')
+      return false
+    }
+    return !!localStorage.getItem('housewarming_rsvp')
+  })
+  const [rsvpForm, setRsvpForm] = useState(() => {
+    const savedRsvp = localStorage.getItem('housewarming_rsvp')
+    if (savedRsvp) {
+      try {
+        return JSON.parse(savedRsvp)
+      } catch {
+        // Fall back to default
+      }
+    }
+    return {
+      name: '',
+      phone: '',
+      attending: 'yes',
+      guests: '1',
+      message: ''
+    }
   })
   const [rsvpList, setRsvpList] = useState([])
 
@@ -344,20 +373,8 @@ function App() {
       console.warn("Supabase credentials missing. Operating in localStorage fallback mode. Please check your .env file or restart the Vite dev server.")
     }
 
-    // Migration: clear old seeded data from localStorage if present
-    const savedRsvpListCheck = localStorage.getItem('housewarming_rsvp_list')
-    if (savedRsvpListCheck && savedRsvpListCheck.includes('Siddharth & Ananya')) {
-      localStorage.removeItem('housewarming_rsvp_list')
-      localStorage.removeItem('housewarming_wishes')
-      localStorage.removeItem('housewarming_rsvp')
-    }
+    // Migration and checks are now handled in state initialization
 
-    // Check if user has already RSVP'd
-    const savedRsvp = localStorage.getItem('housewarming_rsvp')
-    if (savedRsvp) {
-      setRsvpSubmitted(true)
-      setRsvpForm(JSON.parse(savedRsvp))
-    }
 
     // Load RSVP list and wishes from Supabase or localStorage fallback
     const fetchRsvps = async () => {
@@ -1153,7 +1170,20 @@ function App() {
               <h1 className="envelope-cover-title">Laxmi Kote</h1>
             </div>
 
-            <div className="wax-seal">
+            <div 
+              className="wax-seal" 
+              onClick={!isEnvelopeOpened ? (e) => { e.stopPropagation(); handleOpenEnvelope(); } : undefined}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (!isEnvelopeOpened && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleOpenEnvelope();
+                }
+              }}
+              aria-label="Open invitation"
+            >
               <span className="wax-seal-inner">R&R</span>
             </div>
           </div>
@@ -1228,7 +1258,7 @@ function App() {
           </header>
         )}
 
-        {!isIntroComplete && (
+        {isIntroComplete && (
           <>
             {/* HERO SECTION */}
             <header className="hero-section" id="home">
@@ -1771,7 +1801,7 @@ function HostDashboard({ rsvpList, wishes, setCurrentView }) {
       rsvp.attending || '',
       rsvp.attending === 'yes' ? (rsvp.guests || '1') : '0',
       rsvp.message || '',
-      rsvp.created_at ? new Date(rsvp.created_at).toLocaleDateString() : ''
+      rsvp.created_at ? safeParseDate(rsvp.created_at).toLocaleDateString() : ''
     ])
     
     const csvRows = [
