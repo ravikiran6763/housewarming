@@ -396,10 +396,6 @@ function App() {
 
   // Guestbook state
   const [wishes, setWishes] = useState([])
-  const [guestbookForm, setGuestbookForm] = useState({
-    name: '',
-    wish: ''
-  })
 
   // Target Date: July 5, 2026, 10:00 AM
   const TARGET_DATE = new Date('2026-07-05T10:00:00');
@@ -513,7 +509,6 @@ function App() {
   const handleRsvpSubmit = async (e) => {
     e.preventDefault()
     if (!rsvpForm.name.trim()) return
-    if (rsvpForm.attending === 'yes' && !rsvpForm.phone.trim()) return
 
     // Save to global RSVP list
     const savedRsvpList = localStorage.getItem('housewarming_rsvp_list')
@@ -639,63 +634,7 @@ function App() {
     }
   }
 
-  // Guestbook Form Handler
-  const handleWishChange = (e) => {
-    const { name, value } = e.target
-    setGuestbookForm(prev => ({ ...prev, [name]: value }))
-  }
 
-  const handleWishSubmit = async (e) => {
-    e.preventDefault()
-    if (!guestbookForm.name.trim() || !guestbookForm.wish.trim()) return
-
-    playSoundEffect('/assets/wish_success.mp3')
-
-    // Submit to Netlify Forms (only on hosted site)
-    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      fetch("/", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: encode({
-          "form-name": "guestbook",
-          name: guestbookForm.name,
-          wish: guestbookForm.wish
-        })
-      })
-        .then(() => console.log("Netlify guestbook form submitted successfully"))
-        .catch(error => console.error("Netlify guestbook form submission error:", error));
-    }
-
-    const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-
-    const newWish = {
-      id: Date.now(),
-      name: guestbookForm.name,
-      wish: guestbookForm.wish,
-      date: dateStr,
-      likes: 0
-    }
-
-    const updatedWishes = [newWish, ...wishes]
-    setWishes(updatedWishes)
-    localStorage.setItem('housewarming_wishes', JSON.stringify(updatedWishes))
-
-    if (supabase) {
-      const { error } = await supabase
-        .from('wishes')
-        .insert([{
-          name: guestbookForm.name,
-          wish: guestbookForm.wish,
-          date: dateStr,
-          likes: 0
-        }])
-      if (error) {
-        console.error("Error saving wish to Supabase:", error)
-      }
-    }
-
-    setGuestbookForm({ name: '', wish: '' })
-  }
 
   // Liking wishes state & handler
   const [likedWishIds, setLikedWishIds] = useState(() => {
@@ -1214,22 +1153,6 @@ function App() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" htmlFor="rsvp-phone">
-                      Phone Number {rsvpForm.attending === 'no' && <span style={{ opacity: 0.6, fontSize: '13px' }}>(Optional)</span>}
-                    </label>
-                    <input 
-                      type="tel" 
-                      id="rsvp-phone" 
-                      name="phone" 
-                      value={rsvpForm.phone} 
-                      onChange={handleRsvpChange} 
-                      className="form-input" 
-                      placeholder={rsvpForm.attending === 'yes' ? "Enter your phone number" : "Enter your phone number (optional)"} 
-                      required={rsvpForm.attending === 'yes'} 
-                    />
-                  </div>
-
-                  <div className="form-group">
                     <label className="form-label">Will you attend?</label>
                     <div className="radio-group">
                       <label className={`radio-label ${rsvpForm.attending === 'yes' ? 'selected' : ''}`}>
@@ -1255,43 +1178,34 @@ function App() {
                     </div>
                   </div>
 
-                  {rsvpForm.attending === 'yes' && (
-                    <div className="form-group">
-                      <label className="form-label" htmlFor="rsvp-guests">Number of Guests</label>
-                      <select 
-                        id="rsvp-guests" 
-                        name="guests" 
-                        value={rsvpForm.guests} 
-                        onChange={handleRsvpChange} 
-                        className="form-input"
-                      >
-                        <option value="1">1 Person</option>
-                        <option value="2">2 People</option>
-                        <option value="3">3 People</option>
-                        <option value="4">4 People</option>
-                        <option value="5">5+ People</option>
-                      </select>
-                    </div>
-                  )}
+
 
                   <div className="form-group">
-                    <label className="form-label" htmlFor="rsvp-message">Message / Warm Wishes</label>
+                    <label className="form-label" htmlFor="rsvp-message">
+                      {rsvpForm.attending === 'no' ? 'Warm Wishes / Blessings' : 'Message / Warm Wishes (Optional)'}
+                    </label>
                     <textarea 
                       id="rsvp-message" 
                       name="message" 
                       value={rsvpForm.message} 
                       onChange={handleRsvpChange} 
                       className="form-input" 
-                      placeholder="Leave a message for our new home" 
+                      placeholder={rsvpForm.attending === 'no' ? "Share your blessings since you cannot make it..." : "Leave a message for our new home"} 
                       rows="3"
-                      required
-                      onInvalid={(e) => e.target.setCustomValidity("Please share your warm wishes or blessings! It would mean the world to us as we step into our new home. ❤️")}
+                      required={rsvpForm.attending === 'no'}
+                      onInvalid={(e) => {
+                        if (rsvpForm.attending === 'no') {
+                          e.target.setCustomValidity("Please share your warm wishes or blessings! It would mean the world to us. ❤️")
+                        } else {
+                          e.target.setCustomValidity("")
+                        }
+                      }}
                       onInput={(e) => e.target.setCustomValidity("")}
                     ></textarea>
                   </div>
 
                   <button type="submit" className="btn-primary" style={{ width: '100%' }} id="btn-submit-rsvp">
-                    Confirm Attendance
+                    {rsvpForm.attending === 'yes' ? 'Confirm Attendance' : 'Send Wishes & Submit'}
                   </button>
                 </form>
               ) : (
@@ -1395,43 +1309,6 @@ function App() {
           </div>
 
           <div className="guestbook-section">
-            {/* Wish Submission Form */}
-            <div className="glass-card guestbook-form-card">
-              <form onSubmit={handleWishSubmit}>
-                <h3 className="rsvp-title" style={{ fontSize: '20px', textAlign: 'center', marginBottom: '15px' }}>Leave a Blessing</h3>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="wish-name">Your Name</label>
-                  <input 
-                    type="text" 
-                    id="wish-name" 
-                    name="name" 
-                    value={guestbookForm.name} 
-                    onChange={handleWishChange} 
-                    className="form-input" 
-                    placeholder="Enter your name" 
-                    required 
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="wish-text">Your Wish / Message</label>
-                  <textarea 
-                    id="wish-text" 
-                    name="wish" 
-                    value={guestbookForm.wish} 
-                    onChange={handleWishChange} 
-                    className="form-input" 
-                    placeholder="Write your blessings for our new home..." 
-                    rows="3" 
-                    required
-                  ></textarea>
-                </div>
-                <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }} id="btn-submit-wish">
-                  <Send size={18} />
-                  Send Wishes
-                </button>
-              </form>
-            </div>
-
             {/* Wishes Wall */}
             <div className="guestbook-wall">
               {wishes.length > 0 ? (
