@@ -169,6 +169,7 @@ function App() {
 
   const handleSealEnvelope = () => {
     setIsEnvelopeOpened(false)
+    setEnvelopeStep(0)
     playSoundEffect('/assets/wish_success.mp3')
     if (audioRef.current) {
       audioRef.current.pause()
@@ -316,8 +317,6 @@ function App() {
   // Countdown state
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
   
-  // Slider state
-  const [currentSlide, setCurrentSlide] = useState(0)
 
   // RSVP state
   const [rsvpSubmitted, setRsvpSubmitted] = useState(() => {
@@ -466,22 +465,6 @@ function App() {
     };
   }, []);
 
-  // Slider Autoplay
-  useEffect(() => {
-    const slideInterval = setInterval(() => {
-      setCurrentSlide((prev) => (prev === SLIDES.length - 1 ? 0 : prev + 1))
-    }, 6000);
-    return () => clearInterval(slideInterval);
-  }, []);
-
-  // Slider Navigation
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev === 0 ? SLIDES.length - 1 : prev - 1))
-  }
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev === SLIDES.length - 1 ? 0 : prev + 1))
-  }
 
   // RSVP Form handler
   const handleRsvpChange = (e) => {
@@ -1322,61 +1305,6 @@ function App() {
           </div>
         </header>
 
-        {/* PHOTOGRAPH GALLERY SECTION */}
-        <section id="gallery">
-          <div className="section-title-container">
-            <span className="section-subtitle">A Glimpse Inside</span>
-            <h2 className="section-title">Our New Home</h2>
-            <div className="section-divider">
-              <div className="line"></div>
-              <div className="diamond"></div>
-              <div className="line"></div>
-            </div>
-          </div>
-
-          <div className="gallery-container glass-card">
-            <div className="gallery-slider-wrapper">
-              {SLIDES.map((slide, index) => (
-                <div 
-                  key={index} 
-                  className={`gallery-slide ${index === currentSlide ? 'active' : ''}`}
-                  onClick={() => setLightboxImageIndex(index)}
-                >
-                  <img src={slide.url} alt={slide.title} />
-                  <div className="gallery-slide-overlay">
-                    <p className="gallery-slide-desc">{slide.desc}</p>
-                  </div>
-                </div>
-              ))}
-              
-              <button 
-                className="gallery-arrow prev" 
-                onClick={prevSlide}
-                aria-label="Previous image"
-              >
-                <ChevronLeft size={24} />
-              </button>
-              
-              <button 
-                className="gallery-arrow next" 
-                onClick={nextSlide}
-                aria-label="Next image"
-              >
-                <ChevronRight size={24} />
-              </button>
-            </div>
-
-            <div className="gallery-indicators">
-              {SLIDES.map((_, index) => (
-                <span 
-                  key={index} 
-                  className={`gallery-dot ${index === currentSlide ? 'active' : ''}`}
-                  onClick={() => setCurrentSlide(index)}
-                ></span>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* DETAILS & RSVP SECTION */}
         <section id="details">
@@ -1704,7 +1632,7 @@ function App() {
           <p className="footer-logo">Ramyashree & Ravikiran</p>
           <p className="footer-text">Made with ❤️ • Excited to welcome you home</p>
           <p className="footer-host-link" style={{ marginTop: '12px' }}>
-            <span 
+            {/* <span 
               onClick={() => {
                 window.location.hash = '#host';
                 setCurrentView('host');
@@ -1714,7 +1642,7 @@ function App() {
               onMouseLeave={(e) => e.target.style.opacity = 0.5}
             >
               Host Panel
-            </span>
+            </span> */}
           </p>
         </footer>
           </>
