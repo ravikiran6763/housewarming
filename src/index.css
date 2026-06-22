@@ -2730,4 +2730,65 @@ body.intro-active .content-wrapper {
   margin-top: 8px;
 }
 
+/* Tapping Hand Signal Indicator */
+.tap-indicator {
+  position: absolute;
+  top: 50%;
+  right: -42px;
+  transform: translateY(-50%);
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.tap-hand {
+  width: 38px;
+  height: 38px;
+  color: #ffffff;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.35));
+  transform: rotate(-60deg);
+  animation: tapGesture 1.2s infinite ease-in-out;
+}
+
+.tap-ripple {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  top: 6px;
+  left: 6px;
+  opacity: 0;
+  transform: scale(0.5);
+  animation: ripplePulse 1.2s infinite ease-out;
+}
+
+@keyframes tapGesture {
+  0%, 100% {
+    transform: translate(0, 0) scale(1) rotate(-60deg);
+  }
+  50% {
+    transform: translate(-8px, -4px) scale(0.85) rotate(-60deg);
+  }
+}
+
+@keyframes ripplePulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
 
