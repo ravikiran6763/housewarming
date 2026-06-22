@@ -2686,3 +2686,48 @@ body.intro-active .content-wrapper {
   }
 }
 
+/* Wish Like Button Styles */
+.wish-action-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 8px;
+  width: 100%;
+}
+
+.wish-like-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: var(--transition-smooth);
+}
+
+.wish-like-btn:hover {
+  color: var(--color-rose);
+  background: rgba(255, 75, 110, 0.05);
+}
+
+.wish-like-btn.liked {
+  color: var(--color-rose);
+}
+
+.wish-like-btn.liked:hover {
+  background: rgba(255, 75, 110, 0.1);
+}
+
+.wish-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+

@@ -570,7 +570,8 @@ function App() {
         id: Date.now(),
         name: rsvpForm.name,
         wish: rsvpForm.message,
-        date: dateStr
+        date: dateStr,
+        likes: 0
       }
       const updatedWishes = [newWish, ...wishes]
       setWishes(updatedWishes)
@@ -582,7 +583,8 @@ function App() {
           .insert([{
             name: rsvpForm.name,
             wish: rsvpForm.message,
-            date: dateStr
+            date: dateStr,
+            likes: 0
           }])
         if (error) {
           console.error("Error saving automatic wish to Supabase:", error)
@@ -632,7 +634,8 @@ function App() {
       id: Date.now(),
       name: guestbookForm.name,
       wish: guestbookForm.wish,
-      date: dateStr
+      date: dateStr,
+      likes: 0
     }
 
     const updatedWishes = [newWish, ...wishes]
@@ -645,7 +648,8 @@ function App() {
         .insert([{
           name: guestbookForm.name,
           wish: guestbookForm.wish,
-          date: dateStr
+          date: dateStr,
+          likes: 0
         }])
       if (error) {
         console.error("Error saving wish to Supabase:", error)
@@ -653,6 +657,52 @@ function App() {
     }
 
     setGuestbookForm({ name: '', wish: '' })
+  }
+
+  // Liking wishes state & handler
+  const [likedWishIds, setLikedWishIds] = useState(() => {
+    const saved = localStorage.getItem('housewarming_liked_wishes')
+    return saved ? JSON.parse(saved) : []
+  })
+
+  const handleLikeWish = async (wishId) => {
+    const isLiked = likedWishIds.includes(wishId)
+    let newLikedIds;
+    if (isLiked) {
+      newLikedIds = likedWishIds.filter(id => id !== wishId)
+    } else {
+      newLikedIds = [...likedWishIds, wishId]
+    }
+    setLikedWishIds(newLikedIds)
+    localStorage.setItem('housewarming_liked_wishes', JSON.stringify(newLikedIds))
+
+    // Find wish in local state
+    const targetWish = wishes.find(w => w.id === wishId)
+    if (!targetWish) return
+
+    const currentLikes = targetWish.likes || 0
+    const newLikes = isLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1
+
+    // Update local state instantly for snappy UI feedback
+    const updatedWishes = wishes.map(w => {
+      if (w.id === wishId) {
+        return { ...w, likes: newLikes }
+      }
+      return w
+    })
+    setWishes(updatedWishes)
+
+    if (supabase) {
+      const { error } = await supabase
+        .from('wishes')
+        .update({ likes: newLikes })
+        .eq('id', wishId)
+      if (error) {
+        console.error("Error updating likes in Supabase:", error)
+      }
+    } else {
+      localStorage.setItem('housewarming_wishes', JSON.stringify(updatedWishes))
+    }
   }
 
   // Google Calendar Link generator
@@ -1216,6 +1266,8 @@ function App() {
             rsvpList={rsvpList} 
             wishes={wishes} 
             setCurrentView={setCurrentView}
+            likedWishIds={likedWishIds}
+            handleLikeWish={handleLikeWish}
           />
         ) : (
           <>
@@ -1609,15 +1661,29 @@ function App() {
             {/* Wishes Wall */}
             <div className="guestbook-wall">
               {wishes.length > 0 ? (
-                wishes.map((item) => (
-                  <div key={item.id} className="guestbook-note">
-                    <p className="note-message">"{item.wish}"</p>
-                    <div className="note-footer">
-                      <span className="note-author">{item.name}</span>
-                      <span className="note-date">{item.date}</span>
+                wishes.map((item) => {
+                  const isLiked = likedWishIds.includes(item.id);
+                  const likesCount = item.likes || 0;
+                  return (
+                    <div key={item.id} className="guestbook-note">
+                      <p className="note-message">"{item.wish}"</p>
+                      <div className="note-footer">
+                        <span className="note-author">{item.name}</span>
+                        <span className="note-date">{item.date}</span>
+                      </div>
+                      <div className="wish-action-container">
+                        <button 
+                          className={`wish-like-btn ${isLiked ? 'liked' : ''}`}
+                          onClick={() => handleLikeWish(item.id)}
+                          aria-label={isLiked ? "Unlike wish" : "Like wish"}
+                        >
+                          <Heart size={14} fill={isLiked ? "currentColor" : "none"} />
+                          <span>{likesCount}</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="guestbook-empty">
                   No wishes posted yet. Be the first to leave a warm message!
@@ -1707,7 +1773,7 @@ function App() {
 // ==========================================
 // HOST DASHBOARD SUBCOMPONENT
 // ==========================================
-function HostDashboard({ rsvpList, wishes, setCurrentView }) {
+function HostDashboard({ rsvpList, wishes, setCurrentView, likedWishIds, handleLikeWish }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState('attending') // 'attending', 'declined', 'all'
   const [copiedId, setCopiedId] = useState(null)
@@ -1963,15 +2029,29 @@ function HostDashboard({ rsvpList, wishes, setCurrentView }) {
 
           <div className="wishes-scroll-wall">
             {filteredWishes.length > 0 ? (
-              filteredWishes.map((item, idx) => (
-                <div key={item.id || idx} className="dashboard-wish-card">
-                  <p className="wish-card-text">"{item.wish}"</p>
-                  <div className="wish-card-footer">
-                    <span className="wish-card-author">{item.name}</span>
-                    <span className="wish-card-date">{item.date}</span>
+              filteredWishes.map((item, idx) => {
+                const isLiked = likedWishIds.includes(item.id);
+                const likesCount = item.likes || 0;
+                return (
+                  <div key={item.id || idx} className="dashboard-wish-card">
+                    <p className="wish-card-text">"{item.wish}"</p>
+                    <div className="wish-card-footer">
+                      <span className="wish-card-author">{item.name}</span>
+                      <span className="wish-card-date">{item.date}</span>
+                    </div>
+                    <div className="wish-card-actions">
+                      <button 
+                        className={`wish-like-btn ${isLiked ? 'liked' : ''}`}
+                        onClick={() => handleLikeWish(item.id)}
+                        aria-label={isLiked ? "Unlike wish" : "Like wish"}
+                      >
+                        <Heart size={12} fill={isLiked ? "currentColor" : "none"} />
+                        <span>{likesCount}</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="wishes-empty">
                 No wishes found matching your search.
