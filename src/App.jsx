@@ -159,7 +159,6 @@ function App() {
   const [isEnvelopeOpened, setIsEnvelopeOpened] = useState(false)
   const [isIntroComplete, setIsIntroComplete] = useState(false)
   const [envelopeStep, setEnvelopeStep] = useState(0)
-  const [miniSlideIndex, setMiniSlideIndex] = useState(0)
   const [customAlert, setCustomAlert] = useState({ show: false, message: '' })
   const [lightboxImageIndex, setLightboxImageIndex] = useState(null)
 
@@ -179,6 +178,21 @@ function App() {
     setTimeout(() => {
       setIsIntroComplete(true)
     }, 1500)
+  }
+
+  const handleBackToSite = () => {
+    if (window.location.search || window.location.hash) {
+      window.history.pushState({}, '', window.location.pathname)
+    }
+    setIsEnvelopeOpened(false)
+    setIsIntroComplete(false)
+    setEnvelopeStep(0)
+    setCurrentView('invitation')
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+      setIsPlaying(false)
+    }
   }
 
   // Control scroll lock on body depending on intro completion or lightbox state
@@ -255,6 +269,11 @@ function App() {
         })
     }
     playSoundEffect('/assets/wish_success.mp3')
+    
+    // Auto-transition to main page after opening animation completes (1.5s)
+    setTimeout(() => {
+      setIsIntroComplete(true)
+    }, 1500)
   }
 
   // Sound effect helper
@@ -317,6 +336,25 @@ function App() {
   // Countdown state
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
   
+  // Gallery Slider state
+  const [currentSlide, setCurrentSlide] = useState(0)
+
+  // Slider Autoplay
+  useEffect(() => {
+    const slideInterval = setInterval(() => {
+      setCurrentSlide((prev) => (prev === SLIDES.length - 1 ? 0 : prev + 1))
+    }, 6000)
+    return () => clearInterval(slideInterval)
+  }, [])
+
+  // Slider Navigation
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev === 0 ? SLIDES.length - 1 : prev - 1))
+  }
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev === SLIDES.length - 1 ? 0 : prev + 1))
+  }
 
   // RSVP state
   const [rsvpSubmitted, setRsvpSubmitted] = useState(() => {
@@ -774,343 +812,21 @@ function App() {
             {/* The Letter Card inside */}
             <div className="envelope-card">
               <div className="envelope-card-content">
-                {/* Step 0: Welcome & Countdown */}
-                {envelopeStep === 0 && (
-                  <div className="envelope-card-step" style={{ paddingTop: '18px' }}>
-                    <span className="envelope-card-subtitle">New Beginnings</span>
-                    <h2 className="envelope-card-title">WE ARE MOVING!</h2>
-                    
-                    <div className="section-divider" style={{ margin: '12px 0 15px' }}>
-                      <div className="line" style={{ width: '40px' }}></div>
-                      <div className="diamond"></div>
-                      <div className="line" style={{ width: '40px' }}></div>
-                    </div>
-
-                    <p className="envelope-card-names">Ramyashree & Ravikiran</p>
-                    <p className="envelope-card-msg">
-                      {/* A new home is a blank canvas. We warmly invite you to join us for our housewarming celebration as we step into this new chapter. */}
-                      We built a house, now help us make it a home with your presence and blessings.
-                    </p>
-                    
-                    {/* Countdown Timer */}
-                    <div className="countdown-container" style={{ transform: 'scale(0.85)', margin: '5px 0 15px' }}>
-                      <div className="countdown-item">
-                        <span className="countdown-val">{timeLeft.days}</span>
-                        <span className="countdown-lbl">Days</span>
-                      </div>
-                      <div className="countdown-item">
-                        <span className="countdown-val">{timeLeft.hours}</span>
-                        <span className="countdown-lbl">Hours</span>
-                      </div>
-                      <div className="countdown-item">
-                        <span className="countdown-val">{timeLeft.minutes}</span>
-                        <span className="countdown-lbl">Mins</span>
-                      </div>
-                      <div className="countdown-item">
-                        <span className="countdown-val">{timeLeft.seconds}</span>
-                        <span className="countdown-lbl">Secs</span>
-                      </div>
-                    </div>
-
-                    <div className="stepper-nav">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEnvelopeStep(1);
-                        }} 
-                        className="btn-stepper-next"
-                        style={{ width: '100%' }}
-                      >
-                        See Our New Home
-                      </button>
-                    </div>
+                <div className="envelope-card-step" style={{ paddingTop: '24px' }}>
+                  <span className="envelope-card-subtitle">New Beginnings</span>
+                  <h2 className="envelope-card-title">WE ARE MOVING!</h2>
+                  
+                  <div className="section-divider" style={{ margin: '15px 0 20px' }}>
+                    <div className="line" style={{ width: '50px' }}></div>
+                    <div className="diamond"></div>
+                    <div className="line" style={{ width: '50px' }}></div>
                   </div>
-                )}
 
-                {/* Step 1: Gallery Slider */}
-                {envelopeStep === 1 && (
-                  <div className="envelope-card-step">
-                    <span className="envelope-card-subtitle">A Glimpse Inside</span>
-                    <h2 className="envelope-card-title" style={{ fontSize: '22px' }}>Our New Home</h2>
-                    
-                    <div className="mini-slider">
-                      <div className="mini-slider-img-wrapper" onClick={() => setLightboxImageIndex(miniSlideIndex)}>
-                        <img src={SLIDES[miniSlideIndex].url} alt={SLIDES[miniSlideIndex].title} className="mini-slider-img" />
-                      </div>
-                      <div className="mini-slider-controls">
-                        <button 
-                          type="button"
-                          className="mini-slider-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMiniSlideIndex(prev => prev === 0 ? SLIDES.length - 1 : prev - 1);
-                          }}
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-                        <span className="mini-slider-title">{miniSlideIndex + 1} / {SLIDES.length}</span>
-                        <button 
-                          type="button"
-                          className="mini-slider-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMiniSlideIndex(prev => prev === SLIDES.length - 1 ? 0 : prev + 1);
-                          }}
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="stepper-nav">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEnvelopeStep(0);
-                        }} 
-                        className="btn-stepper-back"
-                      >
-                        Back
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEnvelopeStep(2);
-                        }} 
-                        className="btn-stepper-next"
-                      >
-                        Celebration Details
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Step 2: Celebration Details & Map */}
-                {envelopeStep === 2 && (
-                  <div className="envelope-card-step">
-                    <span className="envelope-card-subtitle">Where & When</span>
-                    <h2 className="envelope-card-title" style={{ fontSize: '22px' }}>Celebration Details</h2>
-                    
-                    <div className="mini-details-group">
-                      <div className="mini-details-item">
-                        <div className="mini-details-icon"><Calendar size={18} /></div>
-                        <div className="mini-details-text">
-                          <span className="mini-details-val">Sunday, July 5, 2026</span>
-                          <span className="mini-details-lbl">Date</span>
-                        </div>
-                      </div>
-                      <div className="mini-details-item">
-                        <div className="mini-details-icon"><Clock size={18} /></div>
-                        <div className="mini-details-text">
-                          <span className="mini-details-val">10:00 AM Onwards</span>
-                          <span className="mini-details-lbl">Time (Pooja followed by Lunch)</span>
-                        </div>
-                      </div>
-                      <div className="mini-details-item">
-                        <div className="mini-details-icon"><MapPin size={18} /></div>
-                        <div className="mini-details-text">
-                          <span className="mini-details-val" style={{ fontSize: '11px', lineHeight: '1.3' }}>
-                            No: 41, 1st A Cross, Adarsha layout, Konanakunte cross, Bangalore
-                          </span>
-                          <span className="mini-details-lbl">Venue</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="stepper-nav">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEnvelopeStep(1);
-                        }} 
-                        className="btn-stepper-back"
-                      >
-                        Back
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEnvelopeStep(3);
-                        }} 
-                        className="btn-stepper-next"
-                      >
-                        RSVP & Blessings
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Step 3: RSVP & Blessings Form */}
-                {envelopeStep === 3 && (
-                  <div className="envelope-card-step">
-                    <span className="envelope-card-subtitle">Response</span>
-                    <h2 className="envelope-card-title" style={{ fontSize: '20px', marginBottom: '8px' }}>Kindly RSVP</h2>
-                    
-                    <form 
-                      onSubmit={handleRsvpSubmit} 
-                      onClick={(e) => e.stopPropagation()} 
-                      style={{ display: 'flex', flexDirection: 'column', width: '100%', alignItems: 'center' }}
-                    >
-                      <div className="form-group">
-                        <label className="form-label" htmlFor="wz-rsvp-name">Your Full Name</label>
-                        <input 
-                          type="text" 
-                          id="wz-rsvp-name" 
-                          name="name" 
-                          value={rsvpForm.name} 
-                          onChange={handleRsvpChange} 
-                          className="form-input" 
-                          placeholder="Enter your name" 
-                          required 
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <label className="form-label" htmlFor="wz-rsvp-phone">
-                          Phone Number {rsvpForm.attending === 'no' && <span style={{ opacity: 0.6, fontSize: '11px' }}>(Optional)</span>}
-                        </label>
-                        <input 
-                          type="tel" 
-                          id="wz-rsvp-phone" 
-                          name="phone" 
-                          value={rsvpForm.phone} 
-                          onChange={handleRsvpChange} 
-                          className="form-input" 
-                          placeholder={rsvpForm.attending === 'yes' ? "Enter phone number" : "Enter phone (optional)"} 
-                          required={rsvpForm.attending === 'yes'} 
-                        />
-                      </div>
-
-                      <div className="form-group">
-                        <div className="radio-group">
-                          <label className={`radio-label ${rsvpForm.attending === 'yes' ? 'selected' : ''}`}>
-                            <input 
-                              type="radio" 
-                              name="attending" 
-                              value="yes" 
-                              checked={rsvpForm.attending === 'yes'} 
-                              onChange={handleRsvpChange} 
-                            />
-                            <Check size={14} /> Attending
-                          </label>
-                          <label className={`radio-label ${rsvpForm.attending === 'no' ? 'selected' : ''}`}>
-                            <input 
-                              type="radio" 
-                              name="attending" 
-                              value="no" 
-                              checked={rsvpForm.attending === 'no'} 
-                              onChange={handleRsvpChange} 
-                            />
-                            Regretfully No
-                          </label>
-                        </div>
-                      </div>
-
-                      {rsvpForm.attending === 'yes' && (
-                        <div className="form-group">
-                          <label className="form-label" htmlFor="wz-rsvp-guests">Guests</label>
-                          <select 
-                            id="wz-rsvp-guests" 
-                            name="guests" 
-                            value={rsvpForm.guests} 
-                            onChange={handleRsvpChange} 
-                            className="form-input"
-                          >
-                            <option value="1">1 Person</option>
-                            <option value="2">2 People</option>
-                            <option value="3">3 People</option>
-                            <option value="4">4 People</option>
-                            <option value="5">5+ People</option>
-                          </select>
-                        </div>
-                      )}
-
-                      <div className="form-group">
-                        <label className="form-label" htmlFor="wz-rsvp-message">Warm Wishes</label>
-                        <textarea 
-                          id="wz-rsvp-message" 
-                          name="message" 
-                          value={rsvpForm.message} 
-                          onChange={handleRsvpChange} 
-                          className="form-input" 
-                          placeholder="Blessings for our new home" 
-                          rows="2"
-                          required
-                          onInvalid={(e) => e.target.setCustomValidity("Please share your warm wishes or blessings! It would mean the world to us as we step into our new home. ❤️")}
-                          onInput={(e) => e.target.setCustomValidity("")}
-                        ></textarea>
-                      </div>
-
-                      <div className="stepper-nav" style={{ width: '100%', maxWidth: 'none' }}>
-                        <button 
-                          type="button" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEnvelopeStep(2);
-                          }} 
-                          className="btn-stepper-back"
-                        >
-                          Back
-                        </button>
-                        <button type="submit" className="btn-stepper-next">
-                          Submit Response
-                        </button>
-                      </div>
-                    </form>
-                    
-                    <span 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSealEnvelope();
-                      }}
-                      style={{ fontSize: '11px', marginTop: '10px', textDecoration: 'underline', color: 'var(--color-text-muted)', cursor: 'pointer' }}
-                    >
-                      Skip RSVP & Enter Site
-                    </span>
-                  </div>
-                )}
-
-                {/* Step 4: Add to Calendar */}
-                {envelopeStep === 4 && (
-                  <div className="envelope-card-step">
-                    <span className="envelope-card-subtitle">Calendar Reminder</span>
-                    <h2 className="envelope-card-title">Save the Date!</h2>
-                    <div className="details-icon-wrapper" style={{ margin: '10px auto 15px', background: 'rgba(181, 148, 80, 0.1)', color: 'var(--color-gold)' }}>
-                      <Sparkles size={24} />
-                    </div>
-                    <p className="envelope-card-msg">
-                      We are absolutely thrilled that you will join us! Please save this celebration to your Google Calendar.
-                    </p>
-
-                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', marginBottom: '15px' }}>
-                      <a 
-                        href={getGoogleCalendarLink()} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="btn-primary"
-                        id="wz-btn-add-calendar"
-                        style={{ width: '100%', maxWidth: '280px', textDecoration: 'none', padding: '10px 18px', fontSize: '14px' }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Sparkles size={16} />
-                        Add to Calendar
-                      </a>
-                    </div>
-
-                    <div className="stepper-nav">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSealEnvelope();
-                        }} 
-                        className="btn-stepper-next"
-                        style={{ width: '100%', maxWidth: 'none' }}
-                      >
-                        Seal Response & Enter Site
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  <p className="envelope-card-names">Ramyashree & Ravikiran</p>
+                  <p className="envelope-card-msg" style={{ fontSize: '15px', lineHeight: '1.6', maxWidth: '320px', margin: '0 auto' }}>
+                    We built a house, now help us make it a home with your presence and blessings.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -1268,6 +984,7 @@ function App() {
             setCurrentView={setCurrentView}
             likedWishIds={likedWishIds}
             handleLikeWish={handleLikeWish}
+            handleBackToSite={handleBackToSite}
           />
         ) : (
           <>
@@ -1357,6 +1074,63 @@ function App() {
           </div>
         </header>
 
+        {/* PHOTOGRAPH GALLERY SECTION */}
+        <section id="gallery">
+          <div className="section-title-container">
+            <span className="section-subtitle">A Glimpse Inside</span>
+            <h2 className="section-title">Our New Home</h2>
+            <div className="section-divider">
+              <div className="line"></div>
+              <div className="diamond"></div>
+              <div className="line"></div>
+            </div>
+          </div>
+
+          <div className="gallery-container glass-card">
+            <div className="gallery-slider-wrapper">
+              {SLIDES.map((slide, index) => (
+                <div 
+                  key={index} 
+                  className={`gallery-slide ${index === currentSlide ? 'active' : ''}`}
+                  onClick={() => setLightboxImageIndex(index)}
+                >
+                  <img src={slide.url} alt={slide.title} />
+                  <div className="gallery-slide-overlay">
+                    <p className="gallery-slide-desc">{slide.desc}</p>
+                  </div>
+                </div>
+              ))}
+              
+              <button 
+                type="button"
+                className="gallery-arrow prev" 
+                onClick={prevSlide}
+                aria-label="Previous image"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              
+              <button 
+                type="button"
+                className="gallery-arrow next" 
+                onClick={nextSlide}
+                aria-label="Next image"
+              >
+                <ChevronRight size={24} />
+              </button>
+            </div>
+
+            <div className="gallery-indicators">
+              {SLIDES.map((_, index) => (
+                <span 
+                  key={index} 
+                  className={`gallery-dot ${index === currentSlide ? 'active' : ''}`}
+                  onClick={() => setCurrentSlide(index)}
+                ></span>
+              ))}
+            </div>
+          </div>
+        </section>
 
         {/* DETAILS & RSVP SECTION */}
         <section id="details">
@@ -1773,7 +1547,7 @@ function App() {
 // ==========================================
 // HOST DASHBOARD SUBCOMPONENT
 // ==========================================
-function HostDashboard({ rsvpList, wishes, setCurrentView, likedWishIds, handleLikeWish }) {
+function HostDashboard({ rsvpList, wishes, setCurrentView, likedWishIds, handleLikeWish, handleBackToSite }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState('attending') // 'attending', 'declined', 'all'
   const [copiedId, setCopiedId] = useState(null)
@@ -1859,10 +1633,7 @@ function HostDashboard({ rsvpList, wishes, setCurrentView, likedWishIds, handleL
             Export CSV
           </button>
           <button 
-            onClick={() => {
-              window.location.hash = '';
-              setCurrentView('invitation');
-            }} 
+            onClick={handleBackToSite} 
             className="btn-secondary btn-dashboard"
           >
             <ArrowLeft size={18} />
