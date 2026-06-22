@@ -623,7 +623,7 @@ function App() {
 
   // Google Calendar Link generator
   const getGoogleCalendarLink = () => {
-    const title = encodeURIComponent("Ramya & Ravikiran's Housewarming Celebration");
+    const title = encodeURIComponent("Ramyashree & Ravikiran's Housewarming Celebration");
     const details = encodeURIComponent("Join us for our housewarming party and lunch to celebrate our new home!");
     const location = encodeURIComponent("No: 41, 1st A Cross, Adarsha layout, Ganapatipura, Konanakunte cross, Bangalore 560062");
     // Date formats: 20260705T100000 (Local time 10 AM to 3 PM)
@@ -701,9 +701,10 @@ function App() {
                       <div className="line" style={{ width: '40px' }}></div>
                     </div>
 
-                    <p className="envelope-card-names">Ramya & Ravikiran</p>
+                    <p className="envelope-card-names">Ramyashree & Ravikiran</p>
                     <p className="envelope-card-msg">
-                      A new home is a blank canvas. We warmly invite you to join us for our housewarming celebration as we step into this new chapter.
+                      {/* A new home is a blank canvas. We warmly invite you to join us for our housewarming celebration as we step into this new chapter. */}
+                      We built a house, now help us make it a home with your presence and blessings.
                     </p>
                     
                     {/* Countdown Timer */}
@@ -1166,7 +1167,7 @@ function App() {
           <header className="revealed-header glass-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', textAlign: 'center', animation: 'stepFadeIn 0.8s ease' }}>
             <span className="section-subtitle">Welcome to our new home!</span>
             <h1 className="house-name-title">Laxmi Kote</h1>
-            <p className="envelope-card-names" style={{ margin: '0 0 10px' }}>Ramya & Ravikiran</p>
+            <p className="envelope-card-names" style={{ margin: '0 0 10px' }}>Ramyashree & Ravikiran</p>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '16px', maxWidth: '600px', lineHeight: '1.6' }}>
               We are excited to step into our new home, <span style={{ color: 'var(--color-gold)', fontWeight: 'bold' }}>Laxmi Kote</span>! Thank you for celebrating this milestone with us!
             </p>
@@ -1627,7 +1628,7 @@ function App() {
 
         {/* FOOTER */}
         <footer>
-          <p className="footer-logo">Ramya & Ravikiran</p>
+          <p className="footer-logo">Ramyashree & Ravikiran</p>
           <p className="footer-text">Made with ❤️ • Excited to welcome you home</p>
         </footer>
 
