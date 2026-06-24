@@ -1,461 +1,197 @@
-import { useState, useEffect, useRef } from 'react'
-import { Calendar, MapPin, Clock, Users, Heart, ChevronLeft, ChevronRight, Check, Send, Sparkles, Play, Pause, Search, Download, Copy, ArrowLeft, Trash2 } from 'lucide-react'
-import './App.css'
-import { supabase } from './supabaseClient'
-import img2 from './assets/interior/Mrs. Ramya - Design Presentation_page-0002.jpg'
-import img3 from './assets/interior/Mrs. Ramya - Design Presentation_page-0003.jpg'
-import img4 from './assets/interior/Mrs. Ramya - Design Presentation_page-0004.jpg'
-import img5 from './assets/interior/Mrs. Ramya - Design Presentation_page-0005.jpg'
-import img6 from './assets/interior/Mrs. Ramya - Design Presentation_page-0006.jpg'
-import img7 from './assets/interior/Mrs. Ramya - Design Presentation_page-0007.jpg'
-import img8 from './assets/interior/Mrs. Ramya - Design Presentation_page-0008.jpg'
-import img9 from './assets/interior/Mrs. Ramya - Design Presentation_page-0009.jpg'
-import img10 from './assets/interior/Mrs. Ramya - Design Presentation_page-0010.jpg'
-import img11 from './assets/interior/Mrs. Ramya - Design Presentation_page-0011.jpg'
-import img12 from './assets/interior/Mrs. Ramya - Design Presentation_page-0012.jpg'
-import img13 from './assets/interior/Mrs. Ramya - Design Presentation_page-0013.jpg'
-import img14 from './assets/interior/Mrs. Ramya - Design Presentation_page-0014.jpg'
-import invitationMusic from './assets/invitation.mp3'
+import { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { Users, ChevronLeft, ChevronRight, Settings, X } from 'lucide-react';
+import './App.css';
 
-// Safe date parsing for cross-browser support (specifically Safari/iOS)
-const safeParseDate = (dateStr) => {
-  if (!dateStr) return new Date();
-  if (typeof dateStr === 'string') {
-    const formatted = dateStr.trim().replace(' ', 'T');
-    return new Date(formatted);
+// Supabase client
+import { supabase } from './supabaseClient';
+
+// Store slices
+import { 
+  toggleCustomizer,
+  setCurrentView,
+  setEnvelopeOpened,
+  setIntroComplete,
+  setEnvelopeStep,
+  hideAlert,
+  setLightboxImageIndex
+} from './store/uiSlice';
+import { fetchRsvpsAndWishes } from './store/dbSlice';
+
+// Custom Hooks
+import { useAudio } from './hooks/useAudio';
+
+// Components
+import { CustomAlert } from './components/CustomAlert';
+import { Envelope } from './components/Envelope';
+import { HeroSection } from './components/HeroSection';
+import { GallerySection, SLIDES } from './components/GallerySection';
+import { DetailsSection } from './components/DetailsSection';
+import { MapSection } from './components/MapSection';
+import { GuestbookSection } from './components/GuestbookSection';
+import { TemplateCustomizer } from './components/TemplateCustomizer';
+import { HostDashboard } from './components/HostDashboard';
+import { MusicPlayer } from './components/MusicPlayer';
+
+// Assets
+import invitationMusic from './assets/invitation.mp3';
+import housewarmingMusic from './assets/housewarming.mp3';
+
+// Premium Theme Mappings
+const themeStyles = {
+  marigold: {
+    '--color-gold': '#b59450',
+    '--color-rose': '#9c7b6c',
+    '--color-text-primary': '#3d352e',
+    '--color-text-secondary': '#5c534c',
+    '--color-text-muted': '#8c8279',
+    '--bg-deep': '#f5f2eb',
+    '--bg-mid': '#fbfaf7',
+    '--envelope-bg-start': '#4a3f37',
+    '--envelope-bg-end': '#241e1a',
+    '--envelope-flap-start': '#564a40',
+    '--envelope-flap-end': '#352c26',
+    '--envelope-shadow': 'rgba(36, 30, 26, 0.55)',
+    '--border-glass': 'rgba(181, 148, 80, 0.2)',
+    '--border-focus': 'rgba(181, 148, 80, 0.5)',
+    '--color-gold-glow': 'rgba(181, 148, 80, 0.15)',
+  },
+  crimson: {
+    '--color-gold': '#d4af37',
+    '--color-rose': '#a87c7c',
+    '--color-text-primary': '#361d20',
+    '--color-text-secondary': '#5a3d41',
+    '--color-text-muted': '#8a6b6f',
+    '--bg-deep': '#fbf6f6',
+    '--bg-mid': '#fcfaf9',
+    '--envelope-bg-start': '#521c22',
+    '--envelope-bg-end': '#280a0d',
+    '--envelope-flap-start': '#61242b',
+    '--envelope-flap-end': '#3c1015',
+    '--envelope-shadow': 'rgba(40, 10, 13, 0.55)',
+    '--border-glass': 'rgba(184, 44, 60, 0.2)',
+    '--border-focus': 'rgba(184, 44, 60, 0.5)',
+    '--color-gold-glow': 'rgba(184, 44, 60, 0.15)',
+  },
+  emerald: {
+    '--color-gold': '#b59450',
+    '--color-rose': '#2d5a4c',
+    '--color-text-primary': '#1b3029',
+    '--color-text-secondary': '#385248',
+    '--color-text-muted': '#688277',
+    '--bg-deep': '#f2f6f4',
+    '--bg-mid': '#fafcfb',
+    '--envelope-bg-start': '#122e24',
+    '--envelope-bg-end': '#081712',
+    '--envelope-flap-start': '#1b4033',
+    '--envelope-flap-end': '#0d241d',
+    '--envelope-shadow': 'rgba(8, 23, 18, 0.55)',
+    '--border-glass': 'rgba(45, 90, 76, 0.2)',
+    '--border-focus': 'rgba(45, 90, 76, 0.5)',
+    '--color-gold-glow': 'rgba(45, 90, 76, 0.15)',
+  },
+  sapphire: {
+    '--color-gold': '#d4af37',
+    '--color-rose': '#415a77',
+    '--color-text-primary': '#1b263b',
+    '--color-text-secondary': '#3c4c66',
+    '--color-text-muted': '#6e7f99',
+    '--bg-deep': '#f4f6fa',
+    '--bg-mid': '#fafbfc',
+    '--envelope-bg-start': '#0d1b2a',
+    '--envelope-bg-end': '#050a11',
+    '--envelope-flap-start': '#162b42',
+    '--envelope-flap-end': '#0a1624',
+    '--envelope-shadow': 'rgba(5, 10, 17, 0.55)',
+    '--border-glass': 'rgba(65, 90, 119, 0.2)',
+    '--border-focus': 'rgba(65, 90, 119, 0.5)',
+    '--color-gold-glow': 'rgba(65, 90, 119, 0.15)',
+  },
+  champagne: {
+    '--color-gold': '#d8a48f',
+    '--color-rose': '#b38c82',
+    '--color-text-primary': '#4a3530',
+    '--color-text-secondary': '#6e5651',
+    '--color-text-muted': '#967d78',
+    '--bg-deep': '#fbf8f7',
+    '--bg-mid': '#fdfbfb',
+    '--envelope-bg-start': '#5e4540',
+    '--envelope-bg-end': '#2d1f1c',
+    '--envelope-flap-start': '#6e524c',
+    '--envelope-flap-end': '#3b2925',
+    '--envelope-shadow': 'rgba(45, 31, 28, 0.55)',
+    '--border-glass': 'rgba(179, 140, 130, 0.2)',
+    '--border-focus': 'rgba(179, 140, 130, 0.5)',
+    '--color-gold-glow': 'rgba(179, 140, 130, 0.15)',
   }
-  return new Date(dateStr);
 };
 
-// Image slides details
-const SLIDES = [
-  {
-    url: img2,
-    title: 'Modern Living Space',
-    desc: 'An elegant layout with warm lighting, plush furnishings, and a cozy ambience.'
-  },
-  {
-    url: img3,
-    title: 'Foyer Entryway',
-    desc: 'A welcoming entrance design with a sleek console table, mirror, and soft accents.'
-  },
-  {
-    url: img4,
-    title: 'Dining Area',
-    desc: 'A cozy dining setup perfect for family dinners, gatherings, and celebrations.'
-  },
-  {
-    url: img5,
-    title: 'Gourmet Kitchen',
-    desc: 'A modular kitchen with smart storage, modern built-in appliances, and high-end finishes.'
-  },
-  {
-    url: img6,
-    title: 'Master Bedroom Concept',
-    desc: 'A luxurious and tranquil sanctuary designed specifically for deep rest and relaxation.'
-  },
-  {
-    url: img7,
-    title: 'Master Bedroom Wardrobes',
-    desc: 'Sleek, handle-less built-in wardrobes with modular shelving and dresser units.'
-  },
-  {
-    url: img8,
-    title: 'Guest Bedroom Setup',
-    desc: 'A warm and inviting space designed to make guests feel comfortable and at home.'
-  },
-  {
-    url: img9,
-    title: 'Kids / Study Bedroom',
-    desc: 'A creative, vibrant space designed for work, study, and play.'
-  },
-  {
-    url: img10,
-    title: 'TV & Entertainment Console',
-    desc: 'A minimalist entertainment hub with floating shelves and built-in ambient lighting.'
-  },
-  {
-    url: img11,
-    title: 'Foyer Accent Wall',
-    desc: 'A striking feature wall that sets a premium, artistic tone for the entire home.'
-  },
-  {
-    url: img12,
-    title: 'Cozy Leisure Balcony',
-    desc: 'A small outdoor escape featuring artificial turf, planters, and relaxing seating.'
-  },
-  {
-    url: img13,
-    title: 'Premium Bathroom Vanity',
-    desc: 'A modern utility space featuring smart back-lit mirrors and high-quality quartz tops.'
-  },
-  {
-    url: img14,
-    title: 'Overall Interior Plan',
-    desc: 'A detailed floor layout highlighting the conceptual flow of our beautiful new residence.'
-  }
-];
+// Music track mappings
+const MUSIC_MAP = {
+  traditional_flute: invitationMusic,
+  festive_shehnai: housewarmingMusic,
+  soft_piano: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+  lofi_guitar: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+  custom: ''
+};
 
-// Falling flower petals configuration
-const PETAL_COLORS = [
-  'linear-gradient(135deg, #ff9f00, #ff5e00)', // Marigold Orange
-  'linear-gradient(135deg, #ffe066, #f5c000)', // Marigold Yellow
-  'linear-gradient(135deg, #ff758c, #ff7eb3)', // Rose Pink
-  'linear-gradient(135deg, #ff4e50, #f9d423)', // Sunset Gold
-];
-
-const PETALS = Array.from({ length: 40 }).map((_, i) => ({
-  id: i,
-  left: `${Math.random() * 100}%`,
-  size: `${Math.random() * 12 + 8}px`, // Petal size (8px to 20px)
-  delay: `${Math.random() * 8}s`,
-  duration: `${Math.random() * 5 + 6}s`, // Falling speed
-  color: PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)],
-  drift: `${Math.random() * 100 - 50}px`, // Swaying amount
-  initialRotation: `${Math.random() * 360}deg`
-}));
-
-// URL-encoding helper for Netlify forms submission
-const encode = (data) => {
-  return Object.keys(data)
-    .map((key) => encodeURIComponent(key) + "=" + encodeURIComponent(data[key]))
-    .join("&");
+// Helper for filtering RSVPs by event namespace preview
+const filterRsvpsByEvent = (list, eventId) => {
+  if (!list) return [];
+  const targetPrefix = `[${eventId}]`;
+  return list.filter(item => {
+    const msg = item.message || '';
+    if (eventId === 'laxmi-kote-default') {
+      return msg.startsWith(targetPrefix) || !msg.trim().startsWith('[');
+    }
+    return msg.startsWith(targetPrefix);
+  }).map(item => {
+    const msg = item.message || '';
+    let cleanMessage = msg;
+    if (msg.startsWith(targetPrefix)) {
+      cleanMessage = msg.slice(targetPrefix.length).trim();
+    }
+    return { ...item, message: cleanMessage };
+  });
 };
 
 function App() {
-  // Music state
-  const [isPlaying, setIsPlaying] = useState(false)
-  const audioRef = useRef(null)
-
-  // Routing view state (invitation or host dashboard)
-  const [currentView, setCurrentView] = useState(() => {
-    const hash = window.location.hash
-    if (hash === '#host' || hash === '#/host') return 'host'
-    const searchParams = new URLSearchParams(window.location.search)
-    if (searchParams.get('view') === 'host' || searchParams.has('host')) return 'host'
-    return 'invitation'
-  })
-
-  // Listen to hash changes for routing
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash
-      if (hash === '#host' || hash === '#/host') {
-        setCurrentView('host')
-      } else {
-        const searchParams = new URLSearchParams(window.location.search)
-        if (searchParams.get('view') === 'host' || searchParams.has('host')) {
-          setCurrentView('host')
-        } else {
-          setCurrentView('invitation')
-        }
-      }
-    }
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [])
-
-  // Envelope states
-  const [isEnvelopeOpened, setIsEnvelopeOpened] = useState(false)
-  const [isIntroComplete, setIsIntroComplete] = useState(false)
-  const [envelopeStep, setEnvelopeStep] = useState(0)
-  const [customAlert, setCustomAlert] = useState({ show: false, message: '' })
-  const [lightboxImageIndex, setLightboxImageIndex] = useState(null)
-
-  const showAlert = (message) => {
-    setCustomAlert({ show: true, message })
-  }
-
-  const handleSealEnvelope = () => {
-    setIsEnvelopeOpened(false)
-    setEnvelopeStep(0)
-    playSoundEffect('/assets/wish_success.mp3')
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.currentTime = 0
-      setIsPlaying(false)
-    }
-    setTimeout(() => {
-      setIsIntroComplete(true)
-    }, 1500)
-  }
-
-  const handleBackToSite = () => {
-    if (window.location.search || window.location.hash) {
-      window.history.pushState({}, '', window.location.pathname)
-    }
-    setIsEnvelopeOpened(false)
-    setIsIntroComplete(false)
-    setEnvelopeStep(0)
-    setCurrentView('invitation')
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.currentTime = 0
-      setIsPlaying(false)
-    }
-  }
-
-  // Control scroll lock on body depending on intro completion or lightbox state
-  useEffect(() => {
-    if (currentView === 'host') {
-      document.body.classList.remove('no-scroll')
-      document.documentElement.classList.remove('no-scroll')
-      document.body.classList.remove('intro-active')
-      return
-    }
-    if (!isIntroComplete) {
-      document.body.classList.add('no-scroll')
-      document.documentElement.classList.add('no-scroll')
-      document.body.classList.add('intro-active')
-    } else if (lightboxImageIndex !== null) {
-      document.body.classList.add('no-scroll')
-      document.documentElement.classList.add('no-scroll')
-      document.body.classList.remove('intro-active')
-    } else {
-      document.body.classList.remove('no-scroll')
-      document.documentElement.classList.remove('no-scroll')
-      document.body.classList.remove('intro-active')
-    }
-    return () => {
-      document.body.classList.remove('no-scroll')
-      document.documentElement.classList.remove('no-scroll')
-      document.body.classList.remove('intro-active')
-    }
-  }, [isIntroComplete, lightboxImageIndex, currentView])
-
-  // Handle keyboard navigation for lightbox
-  useEffect(() => {
-    if (lightboxImageIndex === null) return
-
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setLightboxImageIndex(null)
-      } else if (e.key === 'ArrowRight') {
-        setLightboxImageIndex((prev) => (prev === SLIDES.length - 1 ? 0 : prev + 1))
-      } else if (e.key === 'ArrowLeft') {
-        setLightboxImageIndex((prev) => (prev === 0 ? SLIDES.length - 1 : prev - 1))
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [lightboxImageIndex])
-
-  const closeLightbox = () => {
-    setLightboxImageIndex(null)
-  }
-
-  const prevLightboxImage = (e) => {
-    if (e) e.stopPropagation()
-    setLightboxImageIndex((prev) => (prev === 0 ? SLIDES.length - 1 : prev - 1))
-  }
-
-  const nextLightboxImage = (e) => {
-    if (e) e.stopPropagation()
-    setLightboxImageIndex((prev) => (prev === SLIDES.length - 1 ? 0 : prev + 1))
-  }
-
-  const handleOpenEnvelope = () => {
-    setIsEnvelopeOpened(true)
-    if (audioRef.current) {
-      audioRef.current.play()
-        .then(() => {
-          setIsPlaying(true)
-        })
-        .catch((err) => {
-          console.log("Audio autoplay from envelope click was blocked:", err)
-        })
-    }
-    playSoundEffect('/assets/wish_success.mp3')
-    
-    // Auto-transition to main page after opening animation completes (1.5s)
-    setTimeout(() => {
-      setIsIntroComplete(true)
-    }, 1500)
-  }
-
-  // Sound effect helper
-  const playSoundEffect = (src) => {
-    const sfx = new Audio(src);
-    sfx.volume = 0.5;
-    sfx.play().catch((err) => {
-      console.log("Sound effect playback blocked or failed:", err);
-    });
-  };
-
-  // Auto-play attempt on user interaction
-  useEffect(() => {
-    const startAudioOnInteraction = () => {
-      // Remove listeners immediately to prevent double-firing
-      document.removeEventListener('click', startAudioOnInteraction)
-      document.removeEventListener('touchstart', startAudioOnInteraction)
-
-      if (audioRef.current) {
-        audioRef.current.play()
-          .then(() => {
-            setIsPlaying(true)
-          })
-          .catch((err) => {
-            console.log("Autoplay blocked or failed:", err)
-          })
-      }
-    }
-
-    document.addEventListener('click', startAudioOnInteraction)
-    document.addEventListener('touchstart', startAudioOnInteraction)
-
-    return () => {
-      document.removeEventListener('click', startAudioOnInteraction)
-      document.removeEventListener('touchstart', startAudioOnInteraction)
-    }
-  }, [])
-
-  const togglePlay = (e) => {
-    if (e) {
-      e.stopPropagation()
-    }
-    
-    if (!audioRef.current) return
-    
-    if (isPlaying) {
-      audioRef.current.pause()
-      setIsPlaying(false)
-    } else {
-      audioRef.current.play()
-        .then(() => {
-          setIsPlaying(true)
-        })
-        .catch((err) => {
-          console.log("Failed to play audio:", err)
-        })
-    }
-  }
-
-  // Countdown state
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
+  const dispatch = useDispatch();
   
-  // Gallery Slider state
-  const [currentSlide, setCurrentSlide] = useState(0)
+  // Select configs and states
+  const eventConfig = useSelector((state) => state.event.eventConfig);
+  const { 
+    isCustomizerOpen, 
+    isEnvelopeOpened, 
+    isIntroComplete, 
+    lightboxImageIndex, 
+    customAlert, 
+    currentView 
+  } = useSelector((state) => state.ui);
+  const { rsvpList } = useSelector((state) => state.db);
 
-  // Slider Autoplay
-  useEffect(() => {
-    const slideInterval = setInterval(() => {
-      setCurrentSlide((prev) => (prev === SLIDES.length - 1 ? 0 : prev + 1))
-    }, 6000)
-    return () => clearInterval(slideInterval)
-  }, [])
+  const activeSlides = eventConfig.slides && eventConfig.slides.length > 0 ? eventConfig.slides : SLIDES;
+  const filteredRsvpList = filterRsvpsByEvent(rsvpList, eventConfig.eventId);
 
-  // Slider Navigation
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev === 0 ? SLIDES.length - 1 : prev - 1))
-  }
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev === SLIDES.length - 1 ? 0 : prev + 1))
-  }
-
-  // RSVP state
-  const [rsvpSubmitted, setRsvpSubmitted] = useState(() => {
-    const savedRsvpListCheck = localStorage.getItem('housewarming_rsvp_list')
-    if (savedRsvpListCheck && savedRsvpListCheck.includes('Siddharth & Ananya')) {
-      localStorage.removeItem('housewarming_rsvp_list')
-      localStorage.removeItem('housewarming_wishes')
-      localStorage.removeItem('housewarming_rsvp')
-      return false
-    }
-    return !!localStorage.getItem('housewarming_rsvp')
-  })
-  const [rsvpForm, setRsvpForm] = useState(() => {
-    const savedRsvp = localStorage.getItem('housewarming_rsvp')
-    if (savedRsvp) {
-      try {
-        return JSON.parse(savedRsvp)
-      } catch {
-        // Fall back to default
-      }
-    }
-    return {
-      name: '',
-      phone: '',
-      attending: 'yes',
-      guests: '1',
-      message: ''
-    }
-  })
-  const [rsvpList, setRsvpList] = useState([])
-
-  const totalAttendingGuests = rsvpList.reduce((acc, curr) => {
+  const totalAttendingGuests = filteredRsvpList.reduce((acc, curr) => {
     if (curr.attending === 'yes') {
       const val = parseInt(curr.guests, 10);
       return acc + (isNaN(val) ? 1 : val);
     }
     return acc;
-  }, 0)
+  }, 0);
 
-  // Guestbook state
-  const [wishes, setWishes] = useState([])
+  // Setup Music controls
+  const musicSrc = eventConfig.musicType === 'custom' 
+    ? eventConfig.customMusicUrl 
+    : (MUSIC_MAP[eventConfig.musicType] || invitationMusic);
+    
+  const { isPlaying, setIsPlaying, audioRef, togglePlay } = useAudio(musicSrc);
 
-  // Target Date: July 5, 2026, 10:00 AM
-  const TARGET_DATE = new Date('2026-07-05T10:00:00');
-
+  // Sync Supabase Realtime & fetch initials
   useEffect(() => {
-    console.log("Supabase client initialized:", !!supabase)
-    if (!supabase) {
-      console.warn("Supabase credentials missing. Operating in localStorage fallback mode. Please check your .env file or restart the Vite dev server.")
-    }
+    dispatch(fetchRsvpsAndWishes());
 
-    // Migration and checks are now handled in state initialization
-
-
-    // Load RSVP list and wishes from Supabase or localStorage fallback
-    const fetchRsvps = async () => {
-      if (supabase) {
-        const { data, error } = await supabase
-          .from('rsvps')
-          .select('*')
-          .order('created_at', { ascending: true })
-        if (error) {
-          console.error("Error fetching RSVPs:", error)
-        } else if (data) {
-          setRsvpList(data)
-        }
-      } else {
-        const savedRsvpList = localStorage.getItem('housewarming_rsvp_list')
-        if (savedRsvpList) {
-          setRsvpList(JSON.parse(savedRsvpList))
-        } else {
-          setRsvpList([])
-        }
-      }
-    }
-
-    const fetchWishes = async () => {
-      if (supabase) {
-        const { data, error } = await supabase
-          .from('wishes')
-          .select('*')
-          .order('created_at', { ascending: false })
-        if (error) {
-          console.error("Error fetching wishes:", error)
-        } else if (data) {
-          setWishes(data)
-        }
-      } else {
-        const savedWishes = localStorage.getItem('housewarming_wishes')
-        if (savedWishes) {
-          setWishes(JSON.parse(savedWishes))
-        } else {
-          setWishes([])
-        }
-      }
-    }
-
-    fetchRsvps()
-    fetchWishes()
-
-    // Setup real-time listeners if Supabase is connected
     let rsvpsChannel;
     let wishesChannel;
 
@@ -463,461 +199,199 @@ function App() {
       rsvpsChannel = supabase
         .channel('rsvps-realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'rsvps' }, () => {
-          fetchRsvps()
+          dispatch(fetchRsvpsAndWishes());
         })
-        .subscribe()
+        .subscribe();
 
       wishesChannel = supabase
         .channel('wishes-realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'wishes' }, () => {
-          fetchWishes()
+          dispatch(fetchRsvpsAndWishes());
         })
-        .subscribe()
+        .subscribe();
     }
 
-    // Countdown interval
-    const timer = setInterval(() => {
-      const now = new Date().getTime();
-      const difference = TARGET_DATE.getTime() - now;
-
-      if (difference <= 0) {
-        clearInterval(timer);
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      } else {
-        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-        setTimeLeft({ days, hours, minutes, seconds });
-      }
-    }, 1000);
-
     return () => {
-      clearInterval(timer);
       if (rsvpsChannel) supabase.removeChannel(rsvpsChannel);
       if (wishesChannel) supabase.removeChannel(wishesChannel);
     };
-  }, []);
+  }, [dispatch]);
 
+  // Listen to hash changes for customized view
+  useEffect(() => {
+    const handleHash = () => {
+      if (window.location.hash === '#/customize' || window.location.hash === '#customize') {
+        dispatch(toggleCustomizer(true));
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, [dispatch]);
 
-  // RSVP Form handler
-  const handleRsvpChange = (e) => {
-    const { name, value } = e.target
-    setRsvpForm(prev => ({ ...prev, [name]: value }))
-  }
-
-  const handleRsvpSubmit = async (e) => {
-    e.preventDefault()
-    if (!rsvpForm.name.trim()) return
-
-    // Save to global RSVP list
-    const savedRsvpList = localStorage.getItem('housewarming_rsvp_list')
-    let currentList = savedRsvpList ? JSON.parse(savedRsvpList) : []
-
-    // 1. Check duplicate phone in Supabase (if phone number is provided)
-    if (rsvpForm.phone.trim()) {
-      if (supabase) {
-        const { data, error } = await supabase
-          .from('rsvps')
-          .select('name')
-          .eq('phone', rsvpForm.phone.trim())
-          .maybeSingle()
-
-        if (error) {
-          console.error("Error checking for duplicate phone number:", error)
-        } else if (data) {
-          showAlert(`We've already saved a spot for you! This phone number is registered under "${data.name}". We are so excited to celebrate our new home with you! 🏡✨`);
-          return; // Halt submission
-        }
+  // Listen to hash changes for host routing
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash === '#host' || hash === '#/host') {
+        dispatch(setCurrentView('host'));
       } else {
-        // Fallback duplicate check locally
-        const duplicateLocal = currentList.find(item => item.phone && item.phone.trim() === rsvpForm.phone.trim())
-        if (duplicateLocal) {
-          showAlert(`We've already saved a spot for you! This phone number is registered under "${duplicateLocal.name}". We are so excited to celebrate our new home with you! 🏡✨`);
-          return; // Halt submission
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.get('view') === 'host' || searchParams.has('host')) {
+          dispatch(setCurrentView('host'));
+        } else {
+          dispatch(setCurrentView('invitation'));
         }
       }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [dispatch]);
+
+  // Page Scroll Locks on transitions
+  useEffect(() => {
+    if (currentView === 'host') {
+      document.body.classList.remove('no-scroll');
+      document.documentElement.classList.remove('no-scroll');
+      document.body.classList.remove('intro-active');
+      return;
     }
-
-    localStorage.setItem('housewarming_rsvp', JSON.stringify(rsvpForm))
-    setRsvpSubmitted(true)
-    playSoundEffect('/assets/rsvp_success.mp3')
-
-    const existingIndex = currentList.findIndex(item => item.name.toLowerCase() === rsvpForm.name.toLowerCase())
-    if (existingIndex > -1) {
-      currentList[existingIndex] = { ...rsvpForm }
-    } else {
-      currentList.push({ ...rsvpForm })
-    }
-    localStorage.setItem('housewarming_rsvp_list', JSON.stringify(currentList))
-    setRsvpList(currentList)
-
-    // Calculate new total attending guests from currentList
-    const newTotalGuests = currentList.reduce((acc, curr) => {
-      if (curr.attending === 'yes') {
-        const val = parseInt(curr.guests, 10);
-        return acc + (isNaN(val) ? 1 : val);
-      }
-      return acc;
-    }, 0);
-
-    // Submit to Netlify Forms (only on hosted site)
-    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      fetch("/", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: encode({
-          "form-name": "rsvp",
-          name: rsvpForm.name,
-          phone: rsvpForm.phone,
-          attending: rsvpForm.attending,
-          guests: rsvpForm.attending === 'yes' ? rsvpForm.guests : '0',
-          message: rsvpForm.message,
-          total_guests: newTotalGuests
-        })
-      })
-        .then(() => console.log("Netlify RSVP form submitted successfully"))
-        .catch(error => console.error("Netlify RSVP form submission error:", error));
-    }
-
-    // Save to Supabase (if configured)
-    if (supabase) {
-      const { error } = await supabase
-        .from('rsvps')
-        .insert([{
-          name: rsvpForm.name,
-          phone: rsvpForm.phone.trim(),
-          attending: rsvpForm.attending,
-          guests: rsvpForm.attending === 'yes' ? parseInt(rsvpForm.guests, 10) : 0,
-          message: rsvpForm.message
-        }])
-      if (error) {
-        console.error("Error saving RSVP to Supabase:", error)
-      }
-    }
-
-    // Automatically add to guestbook as well if there's a message
-    if (rsvpForm.message.trim()) {
-      const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-      const newWish = {
-        id: Date.now(),
-        name: rsvpForm.name,
-        wish: rsvpForm.message,
-        date: dateStr,
-        likes: 0
-      }
-      const updatedWishes = [newWish, ...wishes]
-      setWishes(updatedWishes)
-      localStorage.setItem('housewarming_wishes', JSON.stringify(updatedWishes))
-
-      if (supabase) {
-        const { error } = await supabase
-          .from('wishes')
-          .insert([{
-            name: rsvpForm.name,
-            wish: rsvpForm.message,
-            date: dateStr,
-            likes: 0
-          }])
-        if (error) {
-          console.error("Error saving automatic wish to Supabase:", error)
-        }
-      }
-    }
-
     if (!isIntroComplete) {
-      if (rsvpForm.attending === 'yes') {
-        setEnvelopeStep(4)
-      } else {
-        handleSealEnvelope()
-      }
-    }
-  }
-
-
-
-  // Liking wishes state & handler
-  const [likedWishIds, setLikedWishIds] = useState(() => {
-    const saved = localStorage.getItem('housewarming_liked_wishes')
-    return saved ? JSON.parse(saved) : []
-  })
-
-  const handleLikeWish = async (wishId) => {
-    const isLiked = likedWishIds.includes(wishId)
-    let newLikedIds;
-    if (isLiked) {
-      newLikedIds = likedWishIds.filter(id => id !== wishId)
+      document.body.classList.add('no-scroll');
+      document.documentElement.classList.add('no-scroll');
+      document.body.classList.add('intro-active');
+    } else if (lightboxImageIndex !== null) {
+      document.body.classList.add('no-scroll');
+      document.documentElement.classList.add('no-scroll');
+      document.body.classList.remove('intro-active');
     } else {
-      newLikedIds = [...likedWishIds, wishId]
+      document.body.classList.remove('no-scroll');
+      document.documentElement.classList.remove('no-scroll');
+      document.body.classList.remove('intro-active');
     }
-    setLikedWishIds(newLikedIds)
-    localStorage.setItem('housewarming_liked_wishes', JSON.stringify(newLikedIds))
+    return () => {
+      document.body.classList.remove('no-scroll');
+      document.documentElement.classList.remove('no-scroll');
+      document.body.classList.remove('intro-active');
+    };
+  }, [isIntroComplete, lightboxImageIndex, currentView]);
 
-    // Find wish in local state
-    const targetWish = wishes.find(w => w.id === wishId)
-    if (!targetWish) return
+  // Handle keyboard navigation for lightbox
+  useEffect(() => {
+    if (lightboxImageIndex === null) return;
 
-    const currentLikes = targetWish.likes || 0
-    const newLikes = isLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1
-
-    // Update local state instantly for snappy UI feedback
-    const updatedWishes = wishes.map(w => {
-      if (w.id === wishId) {
-        return { ...w, likes: newLikes }
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        dispatch(setLightboxImageIndex(null));
+      } else if (e.key === 'ArrowRight') {
+        dispatch(setLightboxImageIndex(
+          lightboxImageIndex === activeSlides.length - 1 ? 0 : lightboxImageIndex + 1
+        ));
+      } else if (e.key === 'ArrowLeft') {
+        dispatch(setLightboxImageIndex(
+          lightboxImageIndex === 0 ? activeSlides.length - 1 : lightboxImageIndex - 1
+        ));
       }
-      return w
-    })
-    setWishes(updatedWishes)
+    };
 
-    if (supabase) {
-      const { error } = await supabase
-        .from('wishes')
-        .update({ likes: newLikes })
-        .eq('id', wishId)
-      if (error) {
-        console.error("Error updating likes in Supabase:", error)
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [lightboxImageIndex, activeSlides.length, dispatch]);
+
+  // Inject themes into document root
+  useEffect(() => {
+    const theme = eventConfig.theme || 'marigold';
+    const variables = themeStyles[theme] || themeStyles.marigold;
+    for (const [key, value] of Object.entries(variables)) {
+      document.documentElement.style.setProperty(key, value);
+    }
+  }, [eventConfig.theme]);
+
+  // Play audio on opening envelope
+  const handleOpenEnvelopeAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch((err) => {
+          console.log("Audio autoplay from envelope click was blocked:", err);
+        });
+    }
+  };
+
+  // Stop audio on returning from host panel
+  const handleBackToSiteAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
+    }
+  };
+
+  const closeLightbox = () => {
+    dispatch(setLightboxImageIndex(null));
+  };
+
+  const prevLightboxImage = (e) => {
+    if (e) e.stopPropagation();
+    dispatch(setLightboxImageIndex(
+      lightboxImageIndex === 0 ? activeSlides.length - 1 : lightboxImageIndex - 1
+    ));
+  };
+
+  const nextLightboxImage = (e) => {
+    if (e) e.stopPropagation();
+    dispatch(setLightboxImageIndex(
+      lightboxImageIndex === activeSlides.length - 1 ? 0 : lightboxImageIndex + 1
+    ));
+  };
+
+  const handleToggleCustomizer = (open) => {
+    dispatch(toggleCustomizer(open));
+    if (!open) {
+      if (window.location.hash === '#/customize' || window.location.hash === '#customize') {
+        window.history.pushState({}, '', window.location.pathname + window.location.search);
       }
     } else {
-      localStorage.setItem('housewarming_wishes', JSON.stringify(updatedWishes))
+      window.location.hash = '#/customize';
     }
-  }
+  };
 
-  // Google Calendar Link generator
-  const getGoogleCalendarLink = () => {
-    const title = encodeURIComponent("Ramyashree & Ravikiran's Housewarming Celebration");
-    const details = encodeURIComponent("Join us for our housewarming party and lunch to celebrate our new home!");
-    const location = encodeURIComponent("No: 41, 1st A Cross, Adarsha layout, Ganapatipura, Konanakunte cross, Bangalore 560062");
-    // Date formats: 20260705T100000 (Local time 10 AM to 3 PM)
-    const dates = "20260705T043000Z/20260705T093000Z"; // UTC time equivalent (10 AM IST is 4:30 AM UTC)
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}&dates=${dates}`;
-  }
+  const searchParams = new URLSearchParams(window.location.search);
+  const showBuilderButton = !searchParams.has('config') || 
+                            searchParams.get('edit') === 'true' || 
+                            searchParams.get('builder') === 'true' || 
+                            window.location.hash === '#customize' || 
+                            window.location.hash === '#/customize';
 
   return (
     <div className="app-container">
       {/* Background Music */}
       <audio 
         ref={audioRef} 
-        src={invitationMusic} 
+        src={musicSrc} 
         loop 
         preload="auto"
       />
 
       {/* Custom Alert Modal Overlay */}
-      {customAlert.show && (
-        <div className="custom-alert-overlay" onClick={() => setCustomAlert({ show: false, message: '' })}>
-          <div className="custom-alert-card glass-card" onClick={(e) => e.stopPropagation()}>
-            <div className="custom-alert-icon">
-              <Sparkles size={24} />
-            </div>
-            <p className="custom-alert-message">{customAlert.message}</p>
-            <button 
-              onClick={() => setCustomAlert({ show: false, message: '' })} 
-              className="btn-primary custom-alert-btn"
-            >
-              Okay
-            </button>
-          </div>
-        </div>
-      )}
+      <CustomAlert 
+        show={customAlert.show} 
+        message={customAlert.message} 
+        onClose={() => dispatch(hideAlert())} 
+      />
 
       {/* Envelope Intro Overlay */}
       {currentView !== 'host' && (
-        <div className={`envelope-overlay ${isIntroComplete ? 'fade-out' : ''}`}>
-        {/* Falling Flower Petals inside overlay */}
-        <div className="flower-petals-container">
-          {PETALS.map((petal) => (
-            <span 
-              key={`intro-petal-${petal.id}`} 
-              className="flower-petal"
-              style={{
-                left: petal.left,
-                width: petal.size,
-                height: petal.size,
-                background: petal.color,
-                animationDelay: petal.delay,
-                animationDuration: petal.duration,
-                '--drift': petal.drift,
-                transform: `rotate(${petal.initialRotation})`,
-              }}
-            />
-          ))}
-        </div>
-
-        <div className={`envelope-container ${isEnvelopeOpened ? 'opened' : ''}`} onClick={!isEnvelopeOpened ? handleOpenEnvelope : undefined}>
-          <div className="envelope">
-            <div className="envelope-flap"></div>
-            <div className="envelope-pocket"></div>
-            
-            {/* The Letter Card inside */}
-            <div className="envelope-card">
-              <div className="envelope-card-content">
-                <div className="envelope-card-step" style={{ paddingTop: '24px' }}>
-                  <span className="envelope-card-subtitle">New Beginnings</span>
-                  <h2 className="envelope-card-title">WE ARE MOVING!</h2>
-                  
-                  <div className="section-divider" style={{ margin: '15px 0 20px' }}>
-                    <div className="line" style={{ width: '50px' }}></div>
-                    <div className="diamond"></div>
-                    <div className="line" style={{ width: '50px' }}></div>
-                  </div>
-
-                  <p className="envelope-card-names">Ramyashree & Ravikiran</p>
-                  <p className="envelope-card-msg" style={{ fontSize: '15px', lineHeight: '1.6', maxWidth: '320px', margin: '0 auto' }}>
-                    We built a house, now help us make it a home with your presence and blessings.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Envelope Cover Content - Top (Kalash & Subtitle) */}
-            <div className="envelope-cover-top">
-              {/* Gold Kalash SVG Outline */}
-              <svg className="kalash-svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                {/* Coconut */}
-                <path d="M 44 48 C 41 38, 44 26, 50 18 C 56 26, 59 38, 56 48 Z" fill="rgba(181, 148, 80, 0.15)" />
-                <path d="M 50 18 V 48" strokeWidth="1.5" strokeDasharray="2 3" />
-                
-                {/* Mango Leaves */}
-                <path d="M 43 48 C 30 42, 22 30, 26 20 C 31 18, 38 28, 45 42" fill="rgba(181, 148, 80, 0.1)" />
-                <path d="M 57 48 C 70 42, 78 30, 74 20 C 69 18, 62 28, 55 42" fill="rgba(181, 148, 80, 0.1)" />
-                <path d="M 46 48 C 38 35, 38 22, 43 14 C 47 18, 48 30, 48 48" fill="rgba(181, 148, 80, 0.1)" />
-                <path d="M 54 48 C 62 35, 62 22, 57 14 C 53 18, 52 30, 52 48" fill="rgba(181, 148, 80, 0.1)" />
-
-                {/* Pot Neck / Rim */}
-                <rect x="40" y="48" width="20" height="6" rx="2" fill="rgba(181, 148, 80, 0.2)" />
-                
-                {/* Pot Body */}
-                <path d="M 41 54 C 28 56, 23 76, 35 84 C 40 87, 60 87, 65 84 C 77 76, 72 56, 59 54 Z" fill="rgba(181, 148, 80, 0.1)" />
-                
-                {/* Pot Base */}
-                <path d="M 43 85 C 43 85, 45 88, 50 88 C 55 88, 57 85, 57 85" />
-                
-                {/* Swastika / Sacred Mark on Pot */}
-                <path d="M 45 70 H 55 M 50 65 V 75 M 45 70 V 65 H 50 M 55 70 V 75 H 50" strokeWidth="1.5" />
-                
-                {/* Small dots around Swastika */}
-                <circle cx="47.5" cy="67.5" r="1" fill="currentColor" stroke="none" />
-                <circle cx="52.5" cy="67.5" r="1" fill="currentColor" stroke="none" />
-                <circle cx="47.5" cy="72.5" r="1" fill="currentColor" stroke="none" />
-                <circle cx="52.5" cy="72.5" r="1" fill="currentColor" stroke="none" />
-              </svg>
-              <span className="envelope-cover-subtitle">GRIHA PRAVESHA</span>
-            </div>
-
-            {/* Envelope Cover Content - Bottom (House Name) */}
-            <div className="envelope-cover-bottom">
-              {/* Gaja Lakshmi Icon flanking Lakshmi with elephants */}
-              <svg className="gaja-lakshmi-svg" viewBox="0 0 140 50" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                {/* Center Lakshmi on Lotus */}
-                <path d="M 60 43 C 63 46, 77 46, 80 43" strokeWidth="1.5" />
-                <path d="M 56 40 C 52 38, 62 33, 67 36" strokeWidth="1.5" />
-                <path d="M 84 40 C 88 38, 78 33, 73 36" strokeWidth="1.5" />
-                <path d="M 67 36 C 66 31, 74 31, 73 36" strokeWidth="1.5" />
-                
-                {/* Lakshmi Seated Torso & Head */}
-                <circle cx="70" cy="18" r="3.5" />
-                <path d="M 68 14 L 70 9 L 72 14 Z" fill="currentColor" stroke="none" />
-                <path d="M 66 23 L 74 23 L 71 31 L 69 31 Z" />
-                <path d="M 61 33 C 61 29, 79 29, 79 33 Z" fill="rgba(181, 148, 80, 0.15)" strokeWidth="1.5" />
-                
-                {/* Upper Hands holding Lotuses */}
-                <path d="M 66 21 C 60 21, 57 16, 58 13" strokeWidth="1.2" />
-                <circle cx="58" cy="12" r="1.5" fill="currentColor" stroke="none" />
-                <path d="M 74 21 C 80 21, 83 16, 82 13" strokeWidth="1.2" />
-                <circle cx="82" cy="12" r="1.5" fill="currentColor" stroke="none" />
-                
-                {/* Lower Hands Mudra & Gold Coins */}
-                <path d="M 66 25 H 62 V 20" strokeWidth="1.2" />
-                <path d="M 74 25 H 78 V 30" strokeWidth="1.2" />
-                <circle cx="78" cy="33" r="0.8" fill="currentColor" stroke="none" />
-                <circle cx="79" cy="36" r="0.6" fill="currentColor" stroke="none" />
-                <circle cx="77" cy="39" r="0.4" fill="currentColor" stroke="none" />
-                
-                {/* Left Elephant (facing right) */}
-                <path d="M 12 36 C 12 26, 17 20, 29 20" />
-                <circle cx="31" cy="22" r="4.5" />
-                <path d="M 28 20 C 25 20, 25 26, 28 26 Z" strokeWidth="1.2" />
-                <path d="M 35 23 C 39 23, 43 18, 40 10 C 38 6, 33 8, 35 13 C 36 16, 35 18, 33 19" strokeWidth="1.8" />
-                <path d="M 40 8 C 42 6, 45 6, 47 9 C 45 11, 41 11, 40 8 Z" fill="currentColor" stroke="none" />
-                <path d="M 47 10 C 52 12, 57 13, 63 14" strokeWidth="1" strokeDasharray="1.5 2" />
-                <path d="M 30 27 V 39" />
-                <path d="M 15 32 V 39" />
-                <path d="M 12 32 C 10 32, 9 35, 10 38" strokeWidth="1" />
-
-                {/* Right Elephant (facing left) */}
-                <path d="M 128 36 C 128 26, 123 20, 111 20" />
-                <circle cx="109" cy="22" r="4.5" />
-                <path d="M 112 20 C 115 20, 115 26, 112 26 Z" strokeWidth="1.2" />
-                <path d="M 105 23 C 101 23, 97 18, 100 10 C 102 6, 107 8, 105 13 C 104 16, 105 18, 107 19" strokeWidth="1.8" />
-                <path d="M 100 8 C 98 6, 95 6, 93 9 C 95 11, 99 11, 100 8 Z" fill="currentColor" stroke="none" />
-                <path d="M 93 10 C 88 12, 83 13, 77 14" strokeWidth="1" strokeDasharray="1.5 2" />
-                <path d="M 110 27 V 39" />
-                <path d="M 125 32 V 39" />
-                <path d="M 128 32 C 130 32, 131 35, 130 38" strokeWidth="1" />
-              </svg>
-              <h1 className="envelope-cover-title">Laxmi Kote</h1>
-            </div>
-
-            <div 
-              className="wax-seal" 
-              onClick={!isEnvelopeOpened ? (e) => { e.stopPropagation(); handleOpenEnvelope(); } : undefined}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (!isEnvelopeOpened && (e.key === 'Enter' || e.key === ' ')) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleOpenEnvelope();
-                }
-              }}
-              aria-label="Open invitation"
-            >
-              <span className="wax-seal-inner">R&R</span>
-              {!isEnvelopeOpened && (
-                <div className="tap-indicator">
-                  <div className="tap-ripple"></div>
-                  <svg className="tap-hand" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10 11V3a1.5 1.5 0 0 1 3 0v8M13 11v-2a1.5 1.5 0 0 1 3 0v2M16 11V9.5a1.5 1.5 0 0 1 3 0v1.5M19 11v-1a1.5 1.5 0 0 1 3 0v5a7 7 0 0 1-14 0v-2a1.5 1.5 0 0 1 3 0v2" />
-                    <path d="M8 12V9a1.5 1.5 0 0 1 3 0v3" />
-                  </svg>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {!isEnvelopeOpened && (
-          <p className="envelope-prompt">
-            You have received an invitation<br />
-            <span style={{ fontSize: '12px', opacity: 0.7, letterSpacing: '1px' }}>Click wax seal to open</span>
-          </p>
-        )}
-      </div>
+        <Envelope onOpenEnvelope={handleOpenEnvelopeAudio} />
       )}
 
       {/* Floating Music Control Button */}
-      <div className="music-control-wrapper">
-        {isPlaying && (
-          <div className="music-visualizer-container">
-            <div className="music-icon-active">
-              <span className="bar"></span>
-              <span className="bar"></span>
-              <span className="bar"></span>
-              <span className="bar"></span>
-            </div>
-          </div>
-        )}
-        <button 
-          onClick={togglePlay} 
-          className={`music-btn ${isPlaying ? 'playing' : ''}`}
-          aria-label={isPlaying ? "Pause background music" : "Play background music"}
-        >
-          {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-        </button>
-        <span className="music-tooltip">
-          {isPlaying ? "Pause Music" : "Play Music"}
-        </span>
-      </div>
+      {currentView !== 'host' && isIntroComplete && (
+        <MusicPlayer isPlaying={isPlaying} togglePlay={togglePlay} />
+      )}
 
       {/* Decorative Orbs */}
       <div className="ambient-glow top-left"></div>
@@ -926,454 +400,61 @@ function App() {
 
       <div className="content-wrapper">
         {currentView === 'host' ? (
-          <HostDashboard 
-            rsvpList={rsvpList} 
-            wishes={wishes} 
-            setCurrentView={setCurrentView}
-            likedWishIds={likedWishIds}
-            handleLikeWish={handleLikeWish}
-            handleBackToSite={handleBackToSite}
-          />
+          <HostDashboard onBackToSite={handleBackToSiteAudio} />
         ) : (
           <>
             {isIntroComplete && (
-          <header className="revealed-header glass-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', textAlign: 'center', animation: 'stepFadeIn 0.8s ease' }}>
-            <span className="section-subtitle">Welcome to our new home!</span>
-            <h1 className="house-name-title">Laxmi Kote</h1>
-            <p className="envelope-card-names" style={{ margin: '0 0 10px' }}>Ramyashree & Ravikiran</p>
-            <p style={{ color: 'var(--color-text-secondary)', fontSize: '16px', maxWidth: '600px', lineHeight: '1.6' }}>
-              We are excited to step into our new home, <span style={{ color: 'var(--color-gold)', fontWeight: 'bold' }}>Laxmi Kote</span>! Thank you for celebrating this milestone with us!
-            </p>
-            
-            <div className="rsvp-attending-count-badge" style={{ margin: '5px 0 0' }}>
-              <Users size={16} />
-              <span>{totalAttendingGuests} guests attending</span>
-            </div>
-
-            {rsvpList.filter(r => r.attending === 'yes').length > 0 && (
-              <div className="rsvp-attending-names-preview" style={{ width: '100%', maxWidth: '500px', margin: '5px 0 0' }}>
-                <strong>Joined by:</strong> {rsvpList.filter(r => r.attending === 'yes').map(r => r.name).join(', ')}
-              </div>
-            )}
-          </header>
-        )}
-
-        {isIntroComplete && (
-          <>
-            {/* HERO SECTION */}
-            <header className="hero-section" id="home">
-          <div className="hero-border-frame glass-card">
-            {/* Falling Flower Petals Effect */}
-            <div className="flower-petals-container">
-              {PETALS.map((petal) => (
-                <span 
-                  key={petal.id} 
-                  className="flower-petal"
-                  style={{
-                    left: petal.left,
-                    width: petal.size,
-                    height: petal.size,
-                    background: petal.color,
-                    animationDelay: petal.delay,
-                    animationDuration: petal.duration,
-                    '--drift': petal.drift,
-                    transform: `rotate(${petal.initialRotation})`,
-                  }}
-                />
-              ))}
-            </div>
-
-            <div className="hero-card">
-              <span className="hero-header-ornament">New Beginnings</span>
-              <h1 className="hero-main-title">WE ARE MOVING!</h1>
-              <p className="hero-names">Ramyashree & Ravikiran</p>
-              
-              <div className="section-divider">
-                <div className="line"></div>
-                <div className="diamond"></div>
-                <div className="line"></div>
-              </div>
-
-              <p className="hero-tagline">
-                We built a house, now help us make it a home with your presence and blessings.
-                {/* A new home is a blank canvas, and we cannot wait to fill it with the colors of laughter, friendship, and family. We warmly invite you to join us for our housewarming celebration as we step into this new chapter. */}
-              </p>
-
-              {/* Countdown Timer */}
-              <div className="countdown-container">
-                <div className="countdown-item">
-                  <span className="countdown-val">{timeLeft.days}</span>
-                  <span className="countdown-lbl">Days</span>
-                </div>
-                <div className="countdown-item">
-                  <span className="countdown-val">{timeLeft.hours}</span>
-                  <span className="countdown-lbl">Hours</span>
-                </div>
-                <div className="countdown-item">
-                  <span className="countdown-val">{timeLeft.minutes}</span>
-                  <span className="countdown-lbl">Mins</span>
-                </div>
-                <div className="countdown-item">
-                  <span className="countdown-val">{timeLeft.seconds}</span>
-                  <span className="countdown-lbl">Secs</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* PHOTOGRAPH GALLERY SECTION */}
-        <section id="gallery">
-          <div className="section-title-container">
-            <span className="section-subtitle">A Glimpse Inside</span>
-            <h2 className="section-title">Our New Home</h2>
-            <div className="section-divider">
-              <div className="line"></div>
-              <div className="diamond"></div>
-              <div className="line"></div>
-            </div>
-          </div>
-
-          <div className="gallery-container glass-card">
-            <div className="gallery-slider-wrapper">
-              {SLIDES.map((slide, index) => (
-                <div 
-                  key={index} 
-                  className={`gallery-slide ${index === currentSlide ? 'active' : ''}`}
-                  onClick={() => setLightboxImageIndex(index)}
-                >
-                  <img src={slide.url} alt={slide.title} />
-                  <div className="gallery-slide-overlay">
-                    <p className="gallery-slide-desc">{slide.desc}</p>
-                  </div>
-                </div>
-              ))}
-              
-              <button 
-                type="button"
-                className="gallery-arrow prev" 
-                onClick={prevSlide}
-                aria-label="Previous image"
-              >
-                <ChevronLeft size={24} />
-              </button>
-              
-              <button 
-                type="button"
-                className="gallery-arrow next" 
-                onClick={nextSlide}
-                aria-label="Next image"
-              >
-                <ChevronRight size={24} />
-              </button>
-            </div>
-
-            <div className="gallery-indicators">
-              {SLIDES.map((_, index) => (
-                <span 
-                  key={index} 
-                  className={`gallery-dot ${index === currentSlide ? 'active' : ''}`}
-                  onClick={() => setCurrentSlide(index)}
-                ></span>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* DETAILS & RSVP SECTION */}
-        <section id="details">
-          <div className="details-rsvp-grid">
-            
-            {/* Event Details Card */}
-            <div className="glass-card event-details-card">
-              <h2 className="rsvp-title">Celebration Details</h2>
-              
-              <div className="details-row">
-                <div className="details-icon-wrapper">
-                  <Calendar size={22} />
-                </div>
-                <div className="details-text-group">
-                  <span className="details-label">Date</span>
-                  <span className="details-value-main">Sunday, July 5, 2026</span>
-                  <span className="details-value-sub">Mark your calendars!</span>
-                </div>
-              </div>
-
-              <div className="details-row">
-                <div className="details-icon-wrapper">
-                  <Clock size={22} />
-                </div>
-                <div className="details-text-group">
-                  <span className="details-label">Time</span>
-                  <span className="details-value-main">10:00 AM Onwards</span>
-                  <span className="details-value-sub">Pooja followed by Lunch</span>
-                </div>
-              </div>
-
-              <div className="details-row">
-                <div className="details-icon-wrapper">
-                  <MapPin size={22} />
-                </div>
-                <div className="details-text-group">
-                  <span className="details-label">Venue</span>
-                  <span className="details-value-main">No: 41, 1st A Cross</span>
-                  <span className="details-value-sub">Adarsha layout, Ganapatipura, Konanakunte cross, Bangalore 560062</span>
-                </div>
-              </div>
-
-              <div className="action-btn-container">
-                <a 
-                  href={getGoogleCalendarLink()} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="btn-primary"
-                  id="btn-add-calendar"
-                >
-                  <Sparkles size={18} />
-                  Add to Calendar
-                </a>
-              </div>
-            </div>
-
-            {/* RSVP Form Card */}
-            <div className="glass-card rsvp-form-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <h2 className="rsvp-title" style={{ marginBottom: '10px', textAlign: 'center' }}>Kindly RSVP</h2>
-              
-              <div className="rsvp-attending-count-badge">
-                <Users size={16} />
-                <span>{totalAttendingGuests} guests attending</span>
-              </div>
-
-              {!rsvpSubmitted ? (
-                <form onSubmit={handleRsvpSubmit} style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                  
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="rsvp-name">Your Full Name</label>
-                    <input 
-                      type="text" 
-                      id="rsvp-name" 
-                      name="name" 
-                      value={rsvpForm.name} 
-                      onChange={handleRsvpChange} 
-                      className="form-input" 
-                      placeholder="Enter your name" 
-                      required 
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Will you attend?</label>
-                    <div className="radio-group">
-                      <label className={`radio-label ${rsvpForm.attending === 'yes' ? 'selected' : ''}`}>
-                        <input 
-                          type="radio" 
-                          name="attending" 
-                          value="yes" 
-                          checked={rsvpForm.attending === 'yes'} 
-                          onChange={handleRsvpChange} 
-                        />
-                        <Check size={16} /> Yes, I will come
-                      </label>
-                      <label className={`radio-label ${rsvpForm.attending === 'no' ? 'selected' : ''}`}>
-                        <input 
-                          type="radio" 
-                          name="attending" 
-                          value="no" 
-                          checked={rsvpForm.attending === 'no'} 
-                          onChange={handleRsvpChange} 
-                        />
-                        Regretfully No
-                      </label>
-                    </div>
-                  </div>
-
-
-
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="rsvp-message">
-                      {rsvpForm.attending === 'no' ? 'Warm Wishes / Blessings' : 'Message / Warm Wishes (Optional)'}
-                    </label>
-                    <textarea 
-                      id="rsvp-message" 
-                      name="message" 
-                      value={rsvpForm.message} 
-                      onChange={handleRsvpChange} 
-                      className="form-input" 
-                      placeholder={rsvpForm.attending === 'no' ? "Share your blessings since you cannot make it..." : "Leave a message for our new home"} 
-                      rows="3"
-                      required={rsvpForm.attending === 'no'}
-                      onInvalid={(e) => {
-                        if (rsvpForm.attending === 'no') {
-                          e.target.setCustomValidity("Please share your warm wishes or blessings! It would mean the world to us. ❤️")
-                        } else {
-                          e.target.setCustomValidity("")
-                        }
-                      }}
-                      onInput={(e) => e.target.setCustomValidity("")}
-                    ></textarea>
-                  </div>
-
-                  <button type="submit" className="btn-primary" style={{ width: '100%' }} id="btn-submit-rsvp">
-                    {rsvpForm.attending === 'yes' ? 'Confirm Attendance' : 'Send Wishes & Submit'}
-                  </button>
-                </form>
-              ) : (
-                <div className="rsvp-success-state" style={{ width: '100%' }}>
-                  <div className="success-icon-wrapper" style={{ margin: '0 auto 10px' }}>
-                    <Heart size={36} fill="currentColor" />
-                  </div>
-                  <h3 className="rsvp-title" style={{ marginBottom: '5px', textAlign: 'center' }}>Thank You!</h3>
-                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '15px', lineHeight: '1.6', marginBottom: '20px', textAlign: 'center' }}>
-                    {rsvpForm.attending === 'yes' 
-                      ? "Your response has been saved. We are thrilled to celebrate this special day with you!"
-                      : "Your response has been saved. We will miss you! We would love it if you could leave a message of blessing in our Guestbook."
-                    }
-                  </p>
-
-                  <button 
-                    onClick={() => {
-                      localStorage.removeItem('housewarming_rsvp')
-                      setRsvpSubmitted(false)
-                    }} 
-                    className="btn-secondary"
-                    id="btn-edit-rsvp"
-                    style={{ display: 'block', margin: '0 auto', width: '100%' }}
-                  >
-                    Change RSVP Response
-                  </button>
-                </div>
-              )}
-              
-              {/* Joined Guest Names Preview */}
-              {rsvpList.filter(r => r.attending === 'yes').length > 0 && (
-                <div className="rsvp-attending-names-preview" style={{ width: '100%' }}>
-                  <strong>Joined by:</strong> {rsvpList.filter(r => r.attending === 'yes').map(r => r.name).join(', ')}
-                </div>
-              )}
-            </div>
-
-          </div>
-        </section>
-          </>
-        )}
-
-        {/* VENUE MAP SECTION */}
-        <section id="map">
-          <div className="section-title-container">
-            <span className="section-subtitle">Find Your Way</span>
-            <h2 className="section-title">Route Map</h2>
-            <div className="section-divider">
-              <div className="line"></div>
-              <div className="diamond"></div>
-              <div className="line"></div>
-            </div>
-          </div>
-
-          <div className="glass-card map-section-card">
-            <div className="map-wrapper">
-              {/* Google Maps Stylized Iframe pointing to the Bangalore address */}
-              <iframe 
-                title="Venue Location Map"
-                src="https://maps.google.com/maps?q=12.888201,77.567145&t=&z=15&ie=UTF8&iwloc=&output=embed"
-                allowFullScreen="" 
-                loading="lazy" 
-                referrerPolicy="no-referrer-when-downgrade"
-              ></iframe>
-            </div>
-
-            <div className="map-details-container">
-              <div className="map-address-box">
-                <h3>New Residence</h3>
-                <p>
-                  No: 41, 1st A Cross, Adarsha layout, Ganapatipura, Konanakunte cross, Bangalore - 560062.<br />
-                  <strong>Landmark:</strong> Near Konanakunte Cross.
+              <header className="revealed-header glass-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', textAlign: 'center', animation: 'stepFadeIn 0.8s ease' }}>
+                <span className="section-subtitle">Welcome to our new home!</span>
+                <h1 className="house-name-title">{eventConfig.houseName}</h1>
+                <p className="envelope-card-names" style={{ margin: '0 0 10px' }}>{eventConfig.hostNames}</p>
+                <p style={{ color: 'var(--color-text-secondary)', fontSize: '16px', maxWidth: '600px', lineHeight: '1.6' }}>
+                  We are excited to step into our new home, <span style={{ color: 'var(--color-gold)', fontWeight: 'bold' }}>{eventConfig.houseName}</span>! Thank you for celebrating this milestone with us!
                 </p>
-              </div>
-              <div>
-                <a 
-                  href="https://www.google.com/maps/dir/?api=1&destination=12.888201,77.567145" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="btn-primary"
-                  id="btn-get-directions"
-                >
-                  <MapPin size={18} />
-                  Get Directions
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* GUESTBOOK SECTION */}
-        <section id="guestbook">
-          <div className="section-title-container">
-            <span className="section-subtitle">Warm Wishes</span>
-            <h2 className="section-title">Home Guestbook</h2>
-            <div className="section-divider">
-              <div className="line"></div>
-              <div className="diamond"></div>
-              <div className="line"></div>
-            </div>
-          </div>
-
-          <div className="guestbook-section">
-            {/* Wishes Wall */}
-            <div className="guestbook-wall">
-              {wishes.length > 0 ? (
-                wishes.map((item) => {
-                  const isLiked = likedWishIds.includes(item.id);
-                  const likesCount = item.likes || 0;
-                  return (
-                    <div key={item.id} className="guestbook-note">
-                      <p className="note-message">"{item.wish}"</p>
-                      <div className="note-footer">
-                        <span className="note-author">{item.name}</span>
-                        <span className="note-date">{item.date}</span>
-                      </div>
-                      <div className="wish-action-container">
-                        <button 
-                          className={`wish-like-btn ${isLiked ? 'liked' : ''}`}
-                          onClick={() => handleLikeWish(item.id)}
-                          aria-label={isLiked ? "Unlike wish" : "Like wish"}
-                        >
-                          <Heart size={14} fill={isLiked ? "currentColor" : "none"} />
-                          <span>{likesCount}</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="guestbook-empty">
-                  No wishes posted yet. Be the first to leave a warm message!
+                
+                <div className="rsvp-attending-count-badge" style={{ margin: '5px 0 0' }}>
+                  <Users size={16} />
+                  <span>{totalAttendingGuests} guests attending</span>
                 </div>
-              )}
-            </div>
-          </div>
-        </section>
 
-        {/* FOOTER */}
-        <footer>
-          <p className="footer-logo">Ramyashree & Ravikiran</p>
-          <p className="footer-text">Made with ❤️ • Excited to welcome you home</p>
-          <p className="footer-host-link" style={{ marginTop: '12px' }}>
-            {/* <span 
-              onClick={() => {
-                window.location.hash = '#host';
-                setCurrentView('host');
-              }} 
-              style={{ cursor: 'pointer', opacity: 0.5, fontSize: '11px', textDecoration: 'underline', color: 'var(--color-text-muted)', transition: 'opacity 0.2s' }}
-              onMouseEnter={(e) => e.target.style.opacity = 0.8}
-              onMouseLeave={(e) => e.target.style.opacity = 0.5}
-            >
-              Host Panel
-            </span> */}
-          </p>
-        </footer>
+                {filteredRsvpList.filter(r => r.attending === 'yes').length > 0 && (
+                  <div className="rsvp-attending-names-preview" style={{ width: '100%', maxWidth: '500px', margin: '5px 0 0' }}>
+                    <strong>Joined by:</strong> {filteredRsvpList.filter(r => r.attending === 'yes').map(r => r.name).join(', ')}
+                  </div>
+                )}
+              </header>
+            )}
+
+            {isIntroComplete && (
+              <>
+                <HeroSection />
+                <GallerySection />
+                <DetailsSection />
+                <MapSection />
+                <GuestbookSection />
+
+                {/* FOOTER */}
+                <footer>
+                  <p className="footer-logo">{eventConfig.hostNames}</p>
+                  <p className="footer-text">Made with ❤️ • Excited to welcome you home</p>
+                  <p className="footer-host-link" style={{ marginTop: '12px' }}>
+                    <span 
+                      onClick={() => {
+                        window.location.hash = '#host';
+                        dispatch(setCurrentView('host'));
+                      }} 
+                      style={{ cursor: 'pointer', opacity: 0.5, fontSize: '11px', textDecoration: 'underline', color: 'var(--color-text-muted)', transition: 'opacity 0.2s' }}
+                      onMouseEnter={(e) => e.target.style.opacity = 0.8}
+                      onMouseLeave={(e) => e.target.style.opacity = 0.5}
+                    >
+                      Host Panel
+                    </span>
+                  </p>
+                </footer>
+              </>
+            )}
           </>
         )}
-
       </div>
 
       {/* Lightbox Modal */}
@@ -1384,7 +465,6 @@ function App() {
           role="dialog"
           aria-modal="true"
         >
-          {/* Close button */}
           <button 
             className="lightbox-close" 
             onClick={closeLightbox}
@@ -1393,7 +473,6 @@ function App() {
             &times;
           </button>
 
-          {/* Prev button */}
           <button 
             className="lightbox-arrow prev" 
             onClick={prevLightboxImage}
@@ -1402,16 +481,14 @@ function App() {
             <ChevronLeft size={36} />
           </button>
 
-          {/* Image Container */}
           <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
             <img 
-              src={SLIDES[lightboxImageIndex].url} 
-              alt={SLIDES[lightboxImageIndex].title} 
+              src={activeSlides[lightboxImageIndex].url} 
+              alt={activeSlides[lightboxImageIndex].title} 
               className="lightbox-image"
             />
           </div>
 
-          {/* Next button */}
           <button 
             className="lightbox-arrow next" 
             onClick={nextLightboxImage}
@@ -1420,305 +497,27 @@ function App() {
             <ChevronRight size={36} />
           </button>
           
-          {/* Mini Counter */}
           <div className="lightbox-counter">
-            {lightboxImageIndex + 1} / {SLIDES.length}
+            {lightboxImageIndex + 1} / {activeSlides.length}
           </div>
         </div>
       )}
+
+      {/* Customizer trigger floating button */}
+      {showBuilderButton && currentView !== 'host' && (
+        <button 
+          onClick={() => handleToggleCustomizer(!isCustomizerOpen)} 
+          className={`customizer-trigger-btn ${isCustomizerOpen ? 'active' : ''}`}
+          title="Customize invitation details & styles"
+        >
+          {isCustomizerOpen ? <X size={22} /> : <Settings size={22} />}
+        </button>
+      )}
+
+      {/* Template Customizer Panel Drawer */}
+      <TemplateCustomizer />
     </div>
-  )
+  );
 }
 
-// ==========================================
-// HOST DASHBOARD SUBCOMPONENT
-// ==========================================
-function HostDashboard({ rsvpList, wishes, setCurrentView, likedWishIds, handleLikeWish, handleBackToSite }) {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [activeTab, setActiveTab] = useState('attending') // 'attending', 'declined', 'all'
-  const [copiedId, setCopiedId] = useState(null)
-
-  // Copy to Clipboard helper
-  const handleCopyPhone = (phone, id) => {
-    if (!phone) return
-    navigator.clipboard.writeText(phone)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
-  }
-
-  // Export to CSV helper
-  const handleExportCSV = () => {
-    const headers = ['Name', 'Phone', 'Attending', 'Guests', 'Message', 'Date']
-    const rows = rsvpList.map(rsvp => [
-      rsvp.name || '',
-      rsvp.phone || '',
-      rsvp.attending || '',
-      rsvp.attending === 'yes' ? (rsvp.guests || '1') : '0',
-      rsvp.message || '',
-      rsvp.created_at ? safeParseDate(rsvp.created_at).toLocaleDateString() : ''
-    ])
-    
-    const csvRows = [
-      headers.join(','), 
-      ...rows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(','))
-    ]
-    const csvString = csvRows.join('\n')
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.setAttribute("href", url)
-    link.setAttribute("download", `laxmi_kote_rsvp_list_${new Date().toISOString().split('T')[0]}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  // Calculate Statistics
-  const totalRsvps = rsvpList.length
-  const yesRsvps = rsvpList.filter(r => r.attending === 'yes')
-  const noRsvps = rsvpList.filter(r => r.attending === 'no')
-  
-  const totalAttendingGuests = yesRsvps.reduce((acc, curr) => {
-    const val = parseInt(curr.guests, 10)
-    return acc + (isNaN(val) ? 1 : val)
-  }, 0)
-
-  // Filter RSVP lists
-  const filteredRsvps = rsvpList.filter(rsvp => {
-    const matchesSearch = 
-      (rsvp.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (rsvp.phone || '').includes(searchTerm)
-    
-    if (!matchesSearch) return false
-    
-    if (activeTab === 'attending') return rsvp.attending === 'yes'
-    if (activeTab === 'declined') return rsvp.attending === 'no'
-    return true
-  })
-
-  // Filter Wishes matching search
-  const filteredWishes = wishes.filter(wish => {
-    return (wish.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-           (wish.wish || '').toLowerCase().includes(searchTerm.toLowerCase())
-  })
-
-  return (
-    <div className="host-dashboard animate-fade-in">
-      <header className="dashboard-header glass-card">
-        <div className="dashboard-header-left">
-          <span className="section-subtitle">Host Control Panel</span>
-          <h1 className="dashboard-title">Laxmi Kote Guests & Wishes</h1>
-        </div>
-        <div className="dashboard-header-actions">
-          <button 
-            onClick={handleExportCSV} 
-            className="btn-primary btn-dashboard"
-            title="Download CSV of all responses"
-          >
-            <Download size={18} />
-            Export CSV
-          </button>
-          <button 
-            onClick={handleBackToSite} 
-            className="btn-secondary btn-dashboard"
-          >
-            <ArrowLeft size={18} />
-            Back to Site
-          </button>
-        </div>
-      </header>
-
-      {/* Stats Cards Section */}
-      <div className="stats-grid">
-        <div className="stat-card glass-card">
-          <div className="stat-icon-wrapper gold">
-            <Users size={24} />
-          </div>
-          <div className="stat-details">
-            <span className="stat-value">{totalAttendingGuests}</span>
-            <span className="stat-label">Total Attending Guests</span>
-          </div>
-        </div>
-
-        <div className="stat-card glass-card">
-          <div className="stat-icon-wrapper green">
-            <Check size={24} />
-          </div>
-          <div className="stat-details">
-            <span className="stat-value">{yesRsvps.length}</span>
-            <span className="stat-label">Yes Responses ({totalRsvps ? Math.round((yesRsvps.length/totalRsvps)*100) : 0}%)</span>
-          </div>
-        </div>
-
-        <div className="stat-card glass-card">
-          <div className="stat-icon-wrapper red">
-            <Trash2 size={24} />
-          </div>
-          <div className="stat-details">
-            <span className="stat-value">{noRsvps.length}</span>
-            <span className="stat-label">Declined Responses</span>
-          </div>
-        </div>
-
-        <div className="stat-card glass-card">
-          <div className="stat-icon-wrapper rose">
-            <Heart size={24} fill="currentColor" />
-          </div>
-          <div className="stat-details">
-            <span className="stat-value">{wishes.length}</span>
-            <span className="stat-label">Total Blessings & Wishes</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Panel Search & Layout */}
-      <div className="dashboard-controls glass-card">
-        <div className="search-bar-container">
-          <Search className="search-icon" size={20} />
-          <input 
-            type="text" 
-            placeholder="Search guests by name or phone number..." 
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
-        </div>
-
-        <div className="tab-container">
-          <button 
-            className={`tab-btn ${activeTab === 'attending' ? 'active' : ''}`}
-            onClick={() => setActiveTab('attending')}
-          >
-            Attending ({yesRsvps.length})
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'declined' ? 'active' : ''}`}
-            onClick={() => setActiveTab('declined')}
-          >
-            Declined ({noRsvps.length})
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
-            onClick={() => setActiveTab('all')}
-          >
-            All Responses ({totalRsvps})
-          </button>
-        </div>
-      </div>
-
-      {/* Split Dual-Pane View */}
-      <div className="dashboard-split-layout">
-        {/* Left Pane - Guest Responses Table */}
-        <div className="dashboard-pane guest-directory-pane glass-card">
-          <div className="pane-header">
-            <h3>RSVP Response Directory</h3>
-            <span className="pane-count">Showing {filteredRsvps.length} entries</span>
-          </div>
-
-          <div className="table-responsive">
-            <table className="guest-table">
-              <thead>
-                <tr>
-                  <th>Guest Name</th>
-                  <th>Contact Info</th>
-                  <th>Attendance</th>
-                  <th>Party Size</th>
-                  <th>RSVP Blessing / Note</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRsvps.length > 0 ? (
-                  filteredRsvps.map((guest, idx) => (
-                    <tr key={guest.id || idx} className="guest-row">
-                      <td className="guest-cell-name">{guest.name}</td>
-                      <td className="guest-cell-phone">
-                        {guest.phone ? (
-                          <div className="phone-badge">
-                            <span>{guest.phone}</span>
-                            <button 
-                              onClick={() => handleCopyPhone(guest.phone, guest.id || idx)}
-                              className="copy-btn"
-                              title="Copy Phone Number"
-                            >
-                              <Copy size={13} />
-                              {copiedId === (guest.id || idx) && <span className="copied-tooltip">Copied!</span>}
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="no-phone">None provided</span>
-                        )}
-                      </td>
-                      <td>
-                        <span className={`status-badge ${guest.attending === 'yes' ? 'attending' : 'declined'}`}>
-                          {guest.attending === 'yes' ? 'Attending' : 'Declined'}
-                        </span>
-                      </td>
-                      <td className="guest-cell-size">
-                        {guest.attending === 'yes' ? `${guest.guests || 1} guest(s)` : '-'}
-                      </td>
-                      <td className="guest-cell-message">
-                        {guest.message ? (
-                          <span className="guest-note-text">"{guest.message}"</span>
-                        ) : (
-                          <span className="no-message">-</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="table-empty">
-                      No guests match your search criteria.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Right Pane - Posts / Wishes Wall */}
-        <div className="dashboard-pane wishes-wall-pane glass-card">
-          <div className="pane-header">
-            <h3>Blessings & Wishes Feed</h3>
-            <span className="pane-count">{filteredWishes.length} wishes</span>
-          </div>
-
-          <div className="wishes-scroll-wall">
-            {filteredWishes.length > 0 ? (
-              filteredWishes.map((item, idx) => {
-                const isLiked = likedWishIds.includes(item.id);
-                const likesCount = item.likes || 0;
-                return (
-                  <div key={item.id || idx} className="dashboard-wish-card">
-                    <p className="wish-card-text">"{item.wish}"</p>
-                    <div className="wish-card-footer">
-                      <span className="wish-card-author">{item.name}</span>
-                      <span className="wish-card-date">{item.date}</span>
-                    </div>
-                    <div className="wish-card-actions">
-                      <button 
-                        className={`wish-like-btn ${isLiked ? 'liked' : ''}`}
-                        onClick={() => handleLikeWish(item.id)}
-                        aria-label={isLiked ? "Unlike wish" : "Like wish"}
-                      >
-                        <Heart size={12} fill={isLiked ? "currentColor" : "none"} />
-                        <span>{likesCount}</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="wishes-empty">
-                No wishes found matching your search.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-export default App
+export default App;
