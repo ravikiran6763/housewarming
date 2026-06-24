@@ -1,6 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
+  showLandingPage: !new URLSearchParams(window.location.search).has('config') && 
+                   !window.location.hash.includes('host') && 
+                   !window.location.hash.includes('customize'),
   isCustomizerOpen: window.location.hash === '#/customize' || window.location.hash === '#customize',
   isEnvelopeOpened: false,
   isIntroComplete: false,
@@ -20,6 +23,9 @@ const uiSlice = createSlice({
   name: 'ui',
   initialState,
   reducers: {
+    setShowLandingPage(state, action) {
+      state.showLandingPage = action.payload;
+    },
     toggleCustomizer(state, action) {
       state.isCustomizerOpen = action.payload;
     },
@@ -48,6 +54,7 @@ const uiSlice = createSlice({
 });
 
 export const {
+  setShowLandingPage,
   toggleCustomizer,
   setEnvelopeOpened,
   setIntroComplete,

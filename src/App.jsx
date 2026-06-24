@@ -32,6 +32,7 @@ import { GuestbookSection } from './components/GuestbookSection';
 import { TemplateCustomizer } from './components/TemplateCustomizer';
 import { HostDashboard } from './components/HostDashboard';
 import { MusicPlayer } from './components/MusicPlayer';
+import { LandingPage } from './components/LandingPage';
 
 // Assets
 import invitationMusic from './assets/invitation.mp3';
@@ -161,6 +162,7 @@ function App() {
   // Select configs and states
   const eventConfig = useSelector((state) => state.event.eventConfig);
   const { 
+    showLandingPage,
     isCustomizerOpen, 
     isEnvelopeOpened, 
     isIntroComplete, 
@@ -365,6 +367,19 @@ function App() {
                             searchParams.get('builder') === 'true' || 
                             window.location.hash === '#customize' || 
                             window.location.hash === '#/customize';
+
+  if (showLandingPage) {
+    return (
+      <div className="app-container">
+        <LandingPage />
+        <CustomAlert 
+          show={customAlert.show} 
+          message={customAlert.message} 
+          onClose={() => dispatch(hideAlert())} 
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="app-container">
