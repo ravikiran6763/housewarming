@@ -944,11 +944,6 @@ function App() {
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '16px', maxWidth: '600px', lineHeight: '1.6' }}>
               We are excited to step into our new home, <span style={{ color: 'var(--color-gold)', fontWeight: 'bold' }}>Laxmi Kote</span>! Thank you for celebrating this milestone with us!
             </p>
-            
-            <div className="rsvp-attending-count-badge" style={{ margin: '5px 0 0' }}>
-              <Users size={16} />
-              <span>{totalAttendingGuests} guests attending</span>
-            </div>
 
             {rsvpList.filter(r => r.attending === 'yes').length > 0 && (
               <div className="rsvp-attending-names-preview" style={{ width: '100%', maxWidth: '500px', margin: '5px 0 0' }}>
@@ -1139,11 +1134,6 @@ function App() {
             <div className="glass-card rsvp-form-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <h2 className="rsvp-title" style={{ marginBottom: '10px', textAlign: 'center' }}>Kindly RSVP</h2>
               
-              <div className="rsvp-attending-count-badge">
-                <Users size={16} />
-                <span>{totalAttendingGuests} guests attending</span>
-              </div>
-
               {!rsvpSubmitted ? (
                 <form onSubmit={handleRsvpSubmit} style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                   
